@@ -7,6 +7,9 @@ const authRouter =
 const userRouter =
   require("./user.router");
 
+const profileRouter =
+  require("./profile.router");
+
 const router =
   express.Router();
 
@@ -18,6 +21,11 @@ router.use(
 router.use(
   "/users",
   userRouter
+);
+
+router.use(
+  "/profile",
+  profileRouter
 );
 
 module.exports =
