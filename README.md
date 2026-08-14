@@ -2704,3 +2704,615 @@ git switch phase-3-validator
 ```bash
 git push --all origin
 ```
+
+# Phase 4 - Jest + Supertest
+
+```bash
+git switch -c phase-4-testing
+npm install -D jest supertest
+```
+
+Update package.json:
+
+```json
+"scripts": {
+  "dev": "nodemon src/index.js",
+  "start": "node src/index.js",
+  "test": "jest",
+  "test:watch": "jest --watch"
+}
+```
+
+### jest.config.js
+
+```js
+module.exports = {
+  testEnvironment: "node",
+  clearMocks: true,
+};
+```
+
+---
+
+## Split Express app from server
+
+Create:
+
+```bash
+touch src/app.js
+```
+
+### src/app.js
+
+```js
+require("dotenv").config({ quiet: true });
+
+const express = require("express");
+const cors = require("cors");
+const routes = require("./routes");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.get("/", (_req, res) => {
+  return res.status(200).json({
+    message: "Node.js REST API Part 3",
+    data: null,
+  });
+});
+
+app.use("/api", routes);
+
+app.use((error, _req, res, _next) => {
+  console.error(error);
+
+  return res.status(500).json({
+    message: "Internal server error",
+    data: null,
+  });
+});
+
+module.exports = app;
+```
+
+### src/index.js
+
+```js
+require("dotenv").config({ quiet: true });
+
+const app = require("./app");
+const { sequelize } = require("./models");
+
+const PORT = process.env.SERVER_PORT || 3000;
+
+const start = async () => {
+  await sequelize.authenticate();
+
+  console.log("Database connected");
+
+  app.listen(PORT, () => {
+    console.log(
+      `Server running on http://localhost:${PORT}`
+    );
+  });
+};
+
+start().catch(console.error);
+```
+
+---
+
+# IMPORTANT ISSUE - Jest + Sequelize Database Environment
+
+## Error
+
+Running:
+
+```bash
+npm test
+```
+
+can fail before any test runs:
+
+```text
+TypeError: Cannot read properties of undefined
+(reading 'use_env_variable')
+```
+
+The stack usually points to:
+
+```text
+src/models/index.js
+```
+
+## Why it happens
+
+Jest runs with:
+
+```text
+NODE_ENV=test
+```
+
+Sequelize model loading usually reads:
+
+```js
+const env = process.env.NODE_ENV || "development";
+const config = require("../config/database")[env];
+```
+
+So:
+
+```text
+npm run dev
+-> NODE_ENV=development
+-> config.development
+```
+
+but:
+
+```text
+npm test
+-> NODE_ENV=test
+-> config.test
+```
+
+If database.js only contains:
+
+```js
+module.exports = {
+  development: { ... }
+};
+```
+
+then:
+
+```text
+config.test = undefined
+```
+
+and Sequelize crashes before Jest can run the tests.
+
+---
+
+## Fix - Create a Separate Test Database
+
+DBeaver:
+
+```sql
+CREATE DATABASE fsd_bootcamp_test;
+SHOW DATABASES;
+```
+
+Update .env:
+
+```env
+SERVER_PORT=3000
+
+DATABASE_HOST=localhost
+DATABASE_PORT=3306
+DATABASE_USER=root
+DATABASE_PASSWORD=
+
+DATABASE_NAME=fsd_bootcamp
+DATABASE_NAME_TEST=fsd_bootcamp_test
+
+JWT_SECRET=harisenin_super_secret
+```
+
+Update .env.example:
+
+```env
+SERVER_PORT=3000
+
+DATABASE_HOST=localhost
+DATABASE_PORT=3306
+DATABASE_USER=root
+DATABASE_PASSWORD=your_password
+
+DATABASE_NAME=fsd_bootcamp
+DATABASE_NAME_TEST=fsd_bootcamp_test
+
+JWT_SECRET=your_jwt_secret
+```
+
+### Replace src/config/database.js
+
+```js
+require("dotenv").config({
+  quiet: true,
+});
+
+const baseConfig = {
+  dialect: "mysql",
+
+  host: process.env.DATABASE_HOST,
+
+  port: Number(
+    process.env.DATABASE_PORT || 3306
+  ),
+
+  username: process.env.DATABASE_USER,
+
+  password: process.env.DATABASE_PASSWORD,
+
+  logging: false,
+};
+
+module.exports = {
+  development: {
+    ...baseConfig,
+    database: process.env.DATABASE_NAME,
+  },
+
+  test: {
+    ...baseConfig,
+    database: process.env.DATABASE_NAME_TEST,
+  },
+};
+```
+
+Run development migration:
+
+```bash
+npx sequelize-cli db:migrate
+```
+
+Run test migration:
+
+```bash
+npx sequelize-cli db:migrate --env test
+```
+
+Check test DB:
+
+```sql
+USE fsd_bootcamp_test;
+SHOW TABLES;
+```
+
+Expected:
+
+```text
+users
+posts
+SequelizeMeta
+```
+
+---
+
+# Profile Endpoint for JWT Test
+
+### src/controllers/profile.controller.js
+
+```js
+const profile = (req, res) => {
+  return res.status(200).json({
+    message: "Success",
+    data: req.user,
+  });
+};
+
+module.exports = { profile };
+```
+
+### src/routes/profile.router.js
+
+```js
+const express = require("express");
+
+const {
+  verifyToken,
+} = require("../middlewares/auth");
+
+const {
+  profile,
+} = require("../controllers/profile.controller");
+
+const router = express.Router();
+
+router.get("/", verifyToken, profile);
+
+module.exports = router;
+```
+
+Add to routes/index.js:
+
+```js
+const profileRouter = require("./profile.router");
+
+router.use("/profile", profileRouter);
+```
+
+---
+
+# Jest Tests
+
+Create:
+
+```bash
+mkdir tests
+touch tests/app.test.js
+```
+
+### tests/app.test.js
+
+```js
+process.env.JWT_SECRET = "jest_test_secret";
+
+const request = require("supertest");
+const jwt = require("jsonwebtoken");
+const app = require("../src/app");
+
+describe("Node.js REST API Part 3", () => {
+  test("GET / should return 200", async () => {
+    const response = await request(app).get("/");
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.message).toBe(
+      "Node.js REST API Part 3"
+    );
+  });
+
+  test(
+    "GET /api/users without token should return 401",
+    async () => {
+      const response = await request(app)
+        .get("/api/users");
+
+      expect(response.statusCode).toBe(401);
+
+      expect(response.body).toEqual({
+        message: "Invalid token",
+        data: null,
+      });
+    }
+  );
+
+  test(
+    "POST /api/auth/register rejects invalid email",
+    async () => {
+      const response = await request(app)
+        .post("/api/auth/register")
+        .send({
+          name: "Adel",
+          email: "adel",
+          password: "Belajar123!",
+        });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.body.message).toBe(
+        "Invalid email"
+      );
+    }
+  );
+
+  test(
+    "POST /api/auth/register rejects weak password",
+    async () => {
+      const response = await request(app)
+        .post("/api/auth/register")
+        .send({
+          name: "Adel",
+          email: "adel@example.com",
+          password: "123",
+        });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.body.message).toBe(
+        "Weak password"
+      );
+    }
+  );
+
+  test(
+    "GET /api/profile with valid token returns user",
+    async () => {
+      const token = jwt.sign(
+        {
+          id: 1,
+          name: "Adel Aulia",
+          email: "adel@example.com",
+        },
+        process.env.JWT_SECRET
+      );
+
+      const response = await request(app)
+        .get("/api/profile")
+        .set(
+          "Authorization",
+          `Bearer ${token}`
+        );
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body.data.email).toBe(
+        "adel@example.com"
+      );
+    }
+  );
+
+  test(
+    "GET /api/profile with invalid token returns 401",
+    async () => {
+      const response = await request(app)
+        .get("/api/profile")
+        .set(
+          "Authorization",
+          "Bearer token-salah"
+        );
+
+      expect(response.statusCode).toBe(401);
+      expect(response.body.message).toBe(
+        "Invalid token"
+      );
+    }
+  );
+});
+```
+
+Run:
+
+```bash
+npm test
+```
+
+Expected:
+
+```text
+PASS tests/app.test.js
+```
+
+---
+
+# Jest Troubleshooting
+
+## 1. config.use_env_variable error
+
+```text
+TypeError: Cannot read properties of undefined
+(reading 'use_env_variable')
+```
+
+Checklist:
+
+```text
+[ ] fsd_bootcamp_test exists
+[ ] DATABASE_NAME_TEST exists in .env
+[ ] database.js contains test config
+[ ] test DB migration has run
+```
+
+Run:
+
+```bash
+npx sequelize-cli db:migrate --env test
+npm test
+```
+
+## 2. Table does not exist in test DB
+
+```bash
+npx sequelize-cli db:migrate --env test
+```
+
+## 3. MySQL connection refused during Jest
+
+```text
+Laragon -> Start All
+```
+
+```bash
+netstat -ano | findstr :3306
+```
+
+## 4. Dotenv logs appear
+
+Example:
+
+```text
+injected env (...) from .env
+```
+
+Use:
+
+```js
+require("dotenv").config({ quiet: true });
+```
+
+---
+
+# Git Safety
+
+Check .env is ignored:
+
+```bash
+git check-ignore -v .env
+```
+
+Check .env is not tracked:
+
+```bash
+git ls-files .env
+```
+
+Expected:
+
+```text
+no output
+```
+
+Commit testing phase:
+
+```bash
+git add .
+git commit -m "phase 4: jest and supertest"
+```
+
+Push testing branch:
+
+```bash
+git push -u origin phase-4-testing
+```
+
+Push all branches:
+
+```bash
+git push --all origin
+```
+
+---
+
+# Final Environment Flow
+
+```text
+npm run dev
+-> NODE_ENV=development
+-> config.development
+-> DATABASE_NAME
+-> fsd_bootcamp
+```
+
+```text
+npm test
+-> NODE_ENV=test
+-> config.test
+-> DATABASE_NAME_TEST
+-> fsd_bootcamp_test
+```
+
+# Final API Flow
+
+```text
+REGISTER
+-> validator
+-> bcrypt.hash
+-> Sequelize
+-> MySQL
+```
+
+```text
+LOGIN
+-> validator
+-> UserModel.findOne
+-> bcrypt.compare
+-> jwt.sign
+-> token
+```
+
+```text
+PROTECTED ROUTE
+-> Bearer token
+-> jwt.verify
+-> req.user
+-> controller
+```
+
+```text
+JEST
+-> Supertest
+-> Express app
+-> actual response
+-> expect(...)
+-> PASS / FAIL
+```
