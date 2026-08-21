@@ -10,6 +10,9 @@ const userRouter =
 const profileRouter =
   require("./profile.router");
 
+const postRouter = 
+  require("./post.router")
+
 const router =
   express.Router();
 
@@ -26,6 +29,11 @@ router.use(
 router.use(
   "/profile",
   profileRouter
+);
+
+router.use(
+  "/posts",
+  postRouter
 );
 
 module.exports =

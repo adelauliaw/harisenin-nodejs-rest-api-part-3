@@ -36,6 +36,15 @@ module.exports = (
         allowNull: false,
       },
 
+      slug: {
+  type:
+    DataTypes.STRING,
+
+  allowNull: true,
+
+  unique: true,
+},
+
       content: {
         type:
           DataTypes.TEXT,
@@ -43,6 +52,7 @@ module.exports = (
         allowNull: true,
       },
     },
+    
 
     {
       sequelize,
