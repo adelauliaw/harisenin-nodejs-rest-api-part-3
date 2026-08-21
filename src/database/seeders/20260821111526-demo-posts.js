@@ -19,11 +19,9 @@ module.exports = {
           content:
             "We built the API with Node.js and consumed it using Next.js.",
 
-          createdAt:
-            new Date(),
 
-          updatedAt:
-            new Date(),
+  created_at: new Date(),
+  updated_at: new Date(),
         },
 
         {
@@ -57,11 +55,9 @@ module.exports = {
           content:
             "Node.js is my backend and Next.js is my frontend.",
 
-          createdAt:
-            new Date(),
 
-          updatedAt:
-            new Date(),
+  created_at: new Date(),
+  updated_at: new Date(),
         },
       ]
     );
