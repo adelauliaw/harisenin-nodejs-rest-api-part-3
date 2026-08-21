@@ -60,6 +60,7 @@ app.use(
 );
 
 const PORT =
+  process.env.PORT ||
   process.env.SERVER_PORT ||
   3000;
 

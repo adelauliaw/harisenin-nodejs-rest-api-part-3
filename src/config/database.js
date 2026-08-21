@@ -1,39 +1,77 @@
-require("dotenv").config();
+require("dotenv").config({
+  quiet: true,
+});
 
-const baseConfig = {
+const common = {
   dialect: "mysql",
-
-  host:
-    process.env.DATABASE_HOST,
-
-  port: Number(
-    process.env.DATABASE_PORT || 3306
-  ),
-
-  username:
-    process.env.DATABASE_USER,
-
-  password:
-    process.env.DATABASE_PASSWORD,
 
   logging: false,
 };
 
 module.exports = {
-
   development: {
-    ...baseConfig,
+    ...common,
+
+    host:
+      process.env.DATABASE_HOST,
+
+    port:
+      Number(
+        process.env.DATABASE_PORT ||
+        3306
+      ),
+
+    username:
+      process.env.DATABASE_USER,
+
+    password:
+      process.env.DATABASE_PASSWORD,
 
     database:
       process.env.DATABASE_NAME,
   },
 
   test: {
-    ...baseConfig,
+    ...common,
+
+    host:
+      process.env.DATABASE_HOST,
+
+    port:
+      Number(
+        process.env.DATABASE_PORT ||
+        3306
+      ),
+
+    username:
+      process.env.DATABASE_USER,
+
+    password:
+      process.env.DATABASE_PASSWORD,
 
     database:
-      process.env.DATABASE_NAME_TEST ||
-      process.env.DATABASE_NAME,
+      process.env.DATABASE_NAME_TEST,
   },
 
+  production: {
+    ...common,
+
+    host:
+      process.env.MYSQLHOST,
+
+    port:
+      Number(
+        process.env.MYSQLPORT ||
+        3306
+      ),
+
+    username:
+      process.env.MYSQLUSER,
+
+    password:
+      process.env.MYSQLPASSWORD,
+
+    database:
+      process.env.MYSQLDATABASE,
+  },
 };
