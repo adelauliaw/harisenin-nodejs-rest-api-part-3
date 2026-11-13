@@ -7,11 +7,18 @@ const {
   "../controllers/user.controller"
 );
 
+const {
+  verifyToken,
+} = require(
+  "../middlewares/auth"
+);
+
 const router =
   express.Router();
 
 router.get(
   "/",
+  verifyToken,
   index
 );
 
