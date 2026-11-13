@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Node.js REST API Dashboard</title>
+<style>
+:root{--bg:#f4f6fb;--panel:#fff;--ink:#172033;--muted:#64748b;--line:#e5eaf2;--primary:#3157d5;--primary-dark:#2445b5;--green:#168653;--red:#b42318;--shadow:0 12px 35px rgba(20,35,70,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,Arial,sans-serif}button,input,textarea{font:inherit}button{cursor:pointer;border:0;border-radius:9px;padding:11px 15px;font-weight:700}.primary{background:var(--primary);color:white}.primary:hover{background:var(--primary-dark)}.secondary{background:#edf1f8;color:#334155}.danger{background:#fff0ef;color:var(--red)}.muted{color:var(--muted)}.hidden{display:none!important}
+.auth-wrap{min-height:100vh;display:grid;place-items:center;padding:24px}.auth-card{width:min(440px,100%);background:white;border:1px solid var(--line);border-radius:18px;padding:30px;box-shadow:var(--shadow)}.brand{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--primary);font-weight:800}.auth-card h1{font-size:27px;margin:12px 0 7px}.auth-card p{color:var(--muted);font-size:14px;line-height:1.6}.tabs{display:flex;gap:8px;margin:22px 0}.tabs button{flex:1}.tabs button.active{background:var(--primary);color:white}label{display:block;font-size:13px;font-weight:700;margin:14px 0 7px}input,textarea{width:100%;padding:12px 13px;border:1px solid #d7deea;border-radius:9px;background:white;outline:none}input:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px #3157d51a}.field-hint{font-size:12px;color:var(--muted);line-height:1.5;margin-top:7px}.auth-card form>button{width:100%;margin-top:20px}.message{padding:11px 13px;border-radius:9px;font-size:13px;margin:14px 0;line-height:1.5}.message.ok{background:#e9f7ef;color:#176b45}.message.err{background:#fff0ef;color:#a52a22}
+.app{min-height:100vh}.topbar{height:68px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 max(22px,calc((100vw - 1180px)/2));position:sticky;top:0;z-index:5}.topbar strong{font-size:15px}.top-actions{display:flex;align-items:center;gap:12px}.user-chip{font-size:13px;color:var(--muted)}.shell{max-width:1180px;margin:30px auto;padding:0 22px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px}.sidebar,.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}.sidebar{padding:14px;height:max-content;position:sticky;top:88px}.nav-btn{width:100%;text-align:left;background:transparent;color:#475569;margin:3px 0;display:flex;gap:11px;align-items:center}.nav-btn.active{background:#edf2ff;color:var(--primary)}.nav-btn span{font-size:17px;width:22px}.content{min-width:0}.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin:2px 0 20px}.page-head h1{font-size:27px;margin:0 0 6px}.page-head p{margin:0;color:var(--muted);font-size:14px}.panel{padding:21px;margin-bottom:18px}.panel h2{font-size:17px;margin:0 0 15px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.stat{padding:18px;border:1px solid var(--line);border-radius:12px;background:#fff}.stat .num{font-size:26px;font-weight:800;margin-top:8px}.stat .label{font-size:13px;color:var(--muted)}.profile-row{display:grid;grid-template-columns:130px 1fr;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}.profile-row:last-child{border:0}.profile-row strong{color:#475569}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:420px}th,td{text-align:left;padding:13px 11px;border-bottom:1px solid var(--line);font-size:13px}th{background:#f8faff;color:var(--muted);font-weight:700}.post-list{display:grid;gap:12px}.post-card{border:1px solid var(--line);border-radius:12px;padding:17px}.post-card h3{font-size:17px;margin:0 0 7px}.post-card p{font-size:13px;color:var(--muted);line-height:1.6;white-space:pre-wrap}.post-meta{font-size:12px;color:var(--muted);margin-bottom:9px}.post-card button{margin-top:8px}.empty{padding:28px;text-align:center;color:var(--muted);font-size:14px}.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.toolbar button{padding:9px 12px}.loading{color:var(--muted);font-size:13px;padding:18px 0}.footer-note{font-size:12px;color:var(--muted);margin-top:16px}
+@media(max-width:760px){.shell{grid-template-columns:1fr;margin:18px auto}.sidebar{position:static;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:8px}.nav-btn{justify-content:center;text-align:center;padding:10px 5px;font-size:12px;display:flex;flex-direction:column;gap:4px}.nav-btn span{width:auto}.topbar{padding:0 16px}.user-chip{display:none}.page-head h1{font-size:23px}.grid{grid-template-columns:1fr}.profile-row{grid-template-columns:105px 1fr}}
+</style>
+</head>
+<body>
+<section id="authView" class="auth-wrap">
+  <div class="auth-card">
+    <div class="brand">Node.js · Express · MySQL</div>
+    <h1>REST API Dashboard</h1>
+    <p>Masuk atau buat akun untuk mengakses fitur pengguna. Posts dapat dilihat tanpa login setelah masuk ke dashboard.</p>
+    <div class="tabs"><button id="loginTab" class="active" type="button">Login</button><button id="registerTab" class="secondary" type="button">Register</button></div>
+    <div id="authMessage" class="message hidden"></div>
+    <form id="loginForm">
+      <label for="loginEmail">Email</label><input id="loginEmail" type="email" autocomplete="email" required placeholder="nama@email.com">
+      <label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Masukkan password">
+      <button class="primary" type="submit">Login</button>
+    </form>
+    <form id="registerForm" class="hidden">
+      <label for="registerName">Nama</label><input id="registerName" required maxlength="100" placeholder="Nama lengkap">
+      <label for="registerEmail">Email</label><input id="registerEmail" type="email" autocomplete="email" required placeholder="nama@email.com">
+      <label for="registerPassword">Password</label><input id="registerPassword" type="password" autocomplete="new-password" required minlength="8" placeholder="Buat password kuat">
+      <div class="field-hint">Minimal 8 karakter, terdiri dari huruf besar, huruf kecil, angka, dan simbol.</div>
+      <button class="primary" type="submit">Buat Akun</button>
+    </form>
+    <div class="footer-note">API: http://localhost:3000</div>
+  </div>
+</section>
+
+<section id="appView" class="app hidden">
+  <header class="topbar"><strong>REST API Dashboard</strong><div class="top-actions"><span id="topUser" class="user-chip"></span><button id="logoutBtn" class="secondary" type="button">Logout</button></div></header>
+  <div class="shell">
+    <aside class="sidebar">
+      <button class="nav-btn active" data-page="overview"><span>⌂</span>Overview</button>
+      <button class="nav-btn" data-page="profile"><span>◎</span>My Profile</button>
+      <button class="nav-btn" data-page="users"><span>♙</span>Users</button>
+      <button class="nav-btn" data-page="posts"><span>▤</span>Posts</button>
+    </aside>
+    <main class="content">
+      <div class="page-head"><div><h1 id="pageTitle">Overview</h1><p id="pageSubtitle">Ringkasan koneksi REST API kamu.</p></div><div class="toolbar"><button id="refreshBtn" class="secondary" type="button">↻ Refresh</button></div></div>
+      <div id="appMessage" class="message hidden"></div>
+      <section id="overviewPage" class="page">
+        <div class="grid">
+          <div class="stat"><div class="label">Authentication</div><div class="num" style="color:var(--green)">Active</div></div>
+          <div class="stat"><div class="label">API Base URL</div><div class="num" style="font-size:17px">localhost:3000</div></div>
+        </div>
+        <div class="panel" style="margin-top:18px"><h2>API Endpoints</h2><div class="profile-row"><strong>Register</strong><span>POST /api/auth/register</span></div><div class="profile-row"><strong>Login</strong><span>POST /api/auth/login</span></div><div class="profile-row"><strong>Users</strong><span>GET /api/users (Bearer token)</span></div><div class="profile-row"><strong>Profile</strong><span>GET /api/profile (Bearer token)</span></div><div class="profile-row"><strong>Posts</strong><span>GET /api/posts</span></div><div class="profile-row"><strong>Post detail</strong><span>GET /api/posts/:slug</span></div></div>
+        <div class="panel"><h2>Connection status</h2><div id="connectionStatus" class="loading">Memeriksa API...</div></div>
+      </section>
+      <section id="profilePage" class="page hidden"><div class="panel"><h2>Informasi Profil</h2><div id="profileData" class="loading">Memuat profil...</div></div></section>
+      <section id="usersPage" class="page hidden"><div class="panel"><div class="page-head"><div><h2>Daftar Users</h2><p>Data pengguna dari endpoint GET /api/users.</p></div><button class="secondary" type="button" data-load="users">Muat ulang</button></div><div id="usersData" class="loading">Memuat users...</div></div></section>
+      <section id="postsPage" class="page hidden"><div class="panel"><div class="page-head"><div><h2>Daftar Posts</h2><p>Pilih sebuah post untuk melihat detail berdasarkan slug.</p></div><button class="secondary" type="button" data-load="posts">Muat ulang</button></div><div id="postsData" class="post-list"><div class="loading">Memuat posts...</div></div></div><div id="postDetailPanel" class="panel hidden"><div class="toolbar" style="justify-content:space-between"><h2>Detail Post</h2><button id="closeDetail" class="secondary" type="button">Tutup</button></div><div id="postDetail"></div></div></section>
+    </main>
+  </div>
+</section>
+<script>
+// Backend tetap menggunakan endpoint yang sudah ada.
+const API_BASE = "http://localhost:3000/api";
+const TOKEN_KEY = "harisenin_rest_api_token";
+const $ = (id) => document.getElementById(id);
+let currentPage = "overview";
+
+function getToken(){ return sessionStorage.getItem(TOKEN_KEY); }
+function setMessage(target, text, type="ok") { target.textContent=text; target.className=`message ${type}`; }
+function clearMessage(target){ target.textContent=""; target.className="message hidden"; }
+function safe(value){ return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c])); }
+async function apiRequest(path, options={}){
+  const headers={"Content-Type":"application/json", ...(options.headers||{})};
+  if(options.auth){
+    const token=getToken();
+    if(!token) throw new Error("Sesi login tidak ditemukan. Silakan login kembali.");
+    headers.Authorization=`Bearer ${token}`;
+  }
+  let response;
+  try { response=await fetch(`${API_BASE}${path}`, {...options, headers}); }
+  catch(error){ throw new Error("Tidak dapat menghubungi Backend. Pastikan server Node.js aktif di port 3000 dan CORS sudah diaktifkan."); }
+  const raw=await response.text();
+  let result={};
+  try { result=raw ? JSON.parse(raw) : {}; } catch { result={message:raw}; }
+  if(!response.ok){
+    if(response.status===401 && options.auth){ logout(false); throw new Error("Token tidak valid atau sudah kedaluwarsa. Silakan login kembali."); }
+    throw new Error(result.message || `Request gagal (${response.status})`);
+  }
+  return result;
+}
+function showAuth(){ $("authView").classList.remove("hidden"); $("appView").classList.add("hidden"); }
+function showApp(){ $("authView").classList.add("hidden"); $("appView").classList.remove("hidden"); }
+function switchAuth(mode){
+  const login=mode==="login";
+  $("loginForm").classList.toggle("hidden",!login); $("registerForm").classList.toggle("hidden",login);
+  $("loginTab").className=login?"active":"secondary"; $("registerTab").className=login?"secondary":"active";
+  clearMessage($("authMessage"));
+}
+$("loginTab").addEventListener("click",()=>switchAuth("login"));
+$("registerTab").addEventListener("click",()=>switchAuth("register"));
+
+$("registerForm").addEventListener("submit",async e=>{
+  e.preventDefault(); const btn=$("registerForm").querySelector("button[type=submit]"); btn.disabled=true; btn.textContent="Mendaftarkan...";
+  try{
+    const payload={name:$("registerName").value.trim(),email:$("registerEmail").value.trim(),password:$("registerPassword").value};
+    const result=await apiRequest("/auth/register",{method:"POST",body:JSON.stringify(payload)});
+    setMessage($("authMessage"),result.message||"Registrasi berhasil. Silakan login.","ok");
+    $("registerForm").reset(); switchAuth("login"); setMessage($("authMessage"),result.message||"Registrasi berhasil. Silakan login.","ok"); $("loginEmail").value=payload.email;
+  }catch(error){setMessage($("authMessage"),error.message,"err");}
+  finally{btn.disabled=false;btn.textContent="Buat Akun";}
+});
+$("loginForm").addEventListener("submit",async e=>{
+  e.preventDefault(); const btn=$("loginForm").querySelector("button[type=submit]"); btn.disabled=true;btn.textContent="Memproses...";
+  try{
+    const result=await apiRequest("/auth/login",{method:"POST",body:JSON.stringify({email:$("loginEmail").value.trim(),password:$("loginPassword").value})});
+    if(!result.data?.token) throw new Error("Login berhasil tetapi token tidak ditemukan pada response.");
+    sessionStorage.setItem(TOKEN_KEY,result.data.token); $("loginForm").reset(); showApp(); await openPage("overview");
+  }catch(error){setMessage($("authMessage"),error.message,"err");}
+  finally{btn.disabled=false;btn.textContent="Login";}
+});
+function logout(showNotice=true){sessionStorage.removeItem(TOKEN_KEY);showAuth();if(showNotice)setMessage($("authMessage"),"Kamu sudah logout.","ok");}
+$("logoutBtn").addEventListener("click",()=>logout());
+
+const pageInfo={overview:["Overview","Ringkasan koneksi REST API kamu."],profile:["My Profile","Informasi akun yang sedang login."],users:["Users","Daftar pengguna yang tersimpan di database."],posts:["Posts","Daftar artikel dan detail konten."]};
+async function openPage(page){
+  currentPage=page; $("pageTitle").textContent=pageInfo[page][0]; $("pageSubtitle").textContent=pageInfo[page][1]; clearMessage($("appMessage"));
+  document.querySelectorAll(".page").forEach(el=>el.classList.add("hidden")); $(page+"Page").classList.remove("hidden");
+  document.querySelectorAll(".nav-btn").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===page));
+  if(page==="overview") await checkConnection(); if(page==="profile") await loadProfile(); if(page==="users") await loadUsers(); if(page==="posts") await loadPosts();
+}
+document.querySelectorAll(".nav-btn").forEach(btn=>btn.addEventListener("click",()=>openPage(btn.dataset.page)));
+$("refreshBtn").addEventListener("click",()=>openPage(currentPage));
+document.querySelectorAll("[data-load]").forEach(btn=>btn.addEventListener("click",()=>btn.dataset.load==="users"?loadUsers():loadPosts()));
+async function checkConnection(){
+  $("connectionStatus").textContent="Memeriksa endpoint posts...";
+  try{await apiRequest("/posts");$("connectionStatus").textContent="Terhubung ke Backend. Endpoint GET /api/posts berhasil diakses.";$("connectionStatus").style.color="var(--green)";}
+  catch(error){$("connectionStatus").textContent=error.message;$("connectionStatus").style.color="var(--red)";}
+  try{const p=await apiRequest("/profile",{auth:true});$("topUser").textContent=p.data?.name?`Login sebagai ${p.data.name}`:"Authenticated";}
+  catch{$("topUser").textContent="Sesi aktif";}
+}
+function renderProfile(data){
+  if(!data||typeof data!=="object"){ $("profileData").textContent="Data profil tidak tersedia.";return; }
+  $("profileData").innerHTML=Object.entries(data).filter(([key])=>!key.toLowerCase().includes("password")).map(([key,value])=>`<div class="profile-row"><strong>${safe(key.replace(/_/g," "))}</strong><span>${safe(typeof value==="object"?JSON.stringify(value):value)}</span></div>`).join("")||"Tidak ada informasi profil.";
+  if(data.name) $("topUser").textContent=`Login sebagai ${data.name}`;
+}
+async function loadProfile(){ $("profileData").textContent="Memuat profil...";try{const result=await apiRequest("/profile",{auth:true});renderProfile(result.data);}catch(error){$("profileData").textContent=error.message;} }
+async function loadUsers(){
+  $("usersData").textContent="Memuat users...";
+  try{const result=await apiRequest("/users",{auth:true});const users=Array.isArray(result.data)?result.data:[];
+    if(!users.length){$("usersData").innerHTML='<div class="empty">Belum ada data user.</div>';return;}
+    $("usersData").innerHTML=`<div class="table-wrap"><table><thead><tr><th>ID</th><th>Nama</th><th>Email</th></tr></thead><tbody>${users.map(u=>`<tr><td>${safe(u.id)}</td><td>${safe(u.name)}</td><td>${safe(u.email)}</td></tr>`).join("")}</tbody></table></div>`;
+  }catch(error){$("usersData").textContent=error.message;}
+}
+async function loadPosts(){
+  $("postsData").innerHTML='<div class="loading">Memuat posts...</div>';$("postDetailPanel").classList.add("hidden");
+  try{const result=await apiRequest("/posts");const posts=Array.isArray(result.data)?result.data:[];
+    if(!posts.length){$("postsData").innerHTML='<div class="empty">Belum ada post.</div>';return;}
+    $("postsData").innerHTML=posts.map(post=>`<article class="post-card"><div class="post-meta">${safe(post.user?.name||"Penulis tidak diketahui")} · ${safe(post.slug)}</div><h3>${safe(post.title)}</h3><p>${safe((post.content||"").slice(0,220))}${(post.content||"").length>220?"...":""}</p><button class="secondary" type="button" data-slug="${safe(post.slug)}">Baca selengkapnya</button></article>`).join("");
+    $("postsData").querySelectorAll("[data-slug]").forEach(btn=>btn.addEventListener("click",()=>loadPostDetail(btn.dataset.slug)));
+  }catch(error){$("postsData").textContent=error.message;}
+}
+async function loadPostDetail(slug){
+  $("postDetailPanel").classList.remove("hidden");$("postDetail").innerHTML='<div class="loading">Memuat detail post...</div>';
+  try{const result=await apiRequest(`/posts/${encodeURIComponent(slug)}`);const p=result.data;
+    if(!p){$("postDetail").textContent="Post tidak ditemukan.";return;}
+    $("postDetail").innerHTML=`<div class="post-meta">${safe(p.user?.name||"Penulis tidak diketahui")} · ${safe(p.slug)}</div><h2>${safe(p.title)}</h2><p style="white-space:pre-wrap;line-height:1.8;font-size:14px">${safe(p.content)}</p>`;
+    $("postDetailPanel").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(error){$("postDetail").textContent=error.message;}
+}
+$("closeDetail").addEventListener("click",()=>$("postDetailPanel").classList.add("hidden"));
+
+if(getToken()){showApp();openPage("overview");}else{showAuth();}
+</script>
+</body>
+</html>
