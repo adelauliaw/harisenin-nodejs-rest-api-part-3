@@ -36,6 +36,12 @@ module.exports = (
         allowNull: false,
       },
 
+      slug: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+      },
+
       content: {
         type:
           DataTypes.TEXT,
