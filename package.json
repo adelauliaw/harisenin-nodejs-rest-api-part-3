@@ -2,17 +2,31 @@
   "name": "harisenin-nodejs-rest-api-part-3",
   "version": "1.0.0",
   "description": "",
+<<<<<<< HEAD
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
     "test": "node --test tests/integration.test.js",
     "db:migrate": "sequelize-cli db:migrate"
+=======
+  "main": "index.js",
+"scripts": {
+  "dev": "nodemon src/index.js",
+  "start": "node src/index.js",
+  "test": "jest",
+  "test:watch": "jest --watch"
+},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adelauliaw/harisenin-nodejs-rest-api-part-3.git"
+>>>>>>> origin/dev
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+<<<<<<< HEAD
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
@@ -20,11 +34,31 @@
     "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.24.6",
+=======
+  "bugs": {
+    "url": "https://github.com/adelauliaw/harisenin-nodejs-rest-api-part-3/issues"
+  },
+  "homepage": "https://github.com/adelauliaw/harisenin-nodejs-rest-api-part-3#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.23.3",
+>>>>>>> origin/dev
     "sequelize": "^6.37.8",
     "validator": "^13.15.35"
   },
   "devDependencies": {
+<<<<<<< HEAD
     "nodemon": "^3.1.14",
     "sequelize-cli": "^6.6.5"
+=======
+    "jest": "^30.4.2",
+    "nodemon": "^3.1.14",
+    "sequelize-cli": "^6.6.5",
+    "supertest": "^7.2.2"
+>>>>>>> origin/dev
   }
 }
