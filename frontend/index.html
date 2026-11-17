@@ -17,9 +17,15 @@
   <div class="auth-card">
     <div class="brand">Node.js · Express · MySQL</div>
     <h1>REST API Dashboard</h1>
+<<<<<<< HEAD
+    <p>Masuk atau buat akun untuk mengakses fitur pengguna. Kelola profil, lihat pengguna, dan tulis post yang tersimpan di MySQL.</p>
+    <div class="tabs"><button id="loginTab" class="active" type="button">Login</button><button id="registerTab" class="secondary" type="button">Register</button></div>
+    <div id="authMessage" role="status" class="message hidden"></div>
+=======
     <p>Masuk atau buat akun untuk mengakses fitur pengguna. Posts dapat dilihat tanpa login setelah masuk ke dashboard.</p>
     <div class="tabs"><button id="loginTab" class="active" type="button">Login</button><button id="registerTab" class="secondary" type="button">Register</button></div>
     <div id="authMessage" class="message hidden"></div>
+>>>>>>> origin/dev
     <form id="loginForm">
       <label for="loginEmail">Email</label><input id="loginEmail" type="email" autocomplete="email" required placeholder="nama@email.com">
       <label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Masukkan password">
@@ -32,7 +38,11 @@
       <div class="field-hint">Minimal 8 karakter, terdiri dari huruf besar, huruf kecil, angka, dan simbol.</div>
       <button class="primary" type="submit">Buat Akun</button>
     </form>
+<<<<<<< HEAD
+    <div id="apiNote" class="footer-note"></div>
+=======
     <div class="footer-note">API: http://localhost:3000</div>
+>>>>>>> origin/dev
   </div>
 </section>
 
@@ -50,24 +60,42 @@
       <div id="appMessage" class="message hidden"></div>
       <section id="overviewPage" class="page">
         <div class="grid">
+<<<<<<< HEAD
+          <div class="stat"><div class="label">Authentication</div><div id="authStatus" class="num">Memeriksa...</div></div>
+          <div class="stat"><div class="label">API Base URL</div><div id="apiAddress" class="num" style="font-size:17px;overflow-wrap:anywhere"></div></div>
+=======
           <div class="stat"><div class="label">Authentication</div><div class="num" style="color:var(--green)">Active</div></div>
           <div class="stat"><div class="label">API Base URL</div><div class="num" style="font-size:17px">localhost:3000</div></div>
+>>>>>>> origin/dev
         </div>
         <div class="panel" style="margin-top:18px"><h2>API Endpoints</h2><div class="profile-row"><strong>Register</strong><span>POST /api/auth/register</span></div><div class="profile-row"><strong>Login</strong><span>POST /api/auth/login</span></div><div class="profile-row"><strong>Users</strong><span>GET /api/users (Bearer token)</span></div><div class="profile-row"><strong>Profile</strong><span>GET /api/profile (Bearer token)</span></div><div class="profile-row"><strong>Posts</strong><span>GET /api/posts</span></div><div class="profile-row"><strong>Post detail</strong><span>GET /api/posts/:slug</span></div></div>
         <div class="panel"><h2>Connection status</h2><div id="connectionStatus" class="loading">Memeriksa API...</div></div>
       </section>
       <section id="profilePage" class="page hidden"><div class="panel"><h2>Informasi Profil</h2><div id="profileData" class="loading">Memuat profil...</div></div></section>
       <section id="usersPage" class="page hidden"><div class="panel"><div class="page-head"><div><h2>Daftar Users</h2><p>Data pengguna dari endpoint GET /api/users.</p></div><button class="secondary" type="button" data-load="users">Muat ulang</button></div><div id="usersData" class="loading">Memuat users...</div></div></section>
+<<<<<<< HEAD
+      <section id="postsPage" class="page hidden"><div class="panel"><h2>Buat Post</h2><form id="postForm"><label for="postTitle">Judul</label><input id="postTitle" required maxlength="255" placeholder="Judul post"><label for="postContent">Konten</label><textarea id="postContent" rows="5" placeholder="Tulis konten post"></textarea><div id="postMessage" class="message hidden" role="status"></div><button class="primary" type="submit" style="margin-top:14px">Simpan Post</button></form></div><div class="panel"><div class="page-head"><div><h2>Daftar Posts</h2><p>Pilih sebuah post untuk melihat detail berdasarkan slug.</p></div><button class="secondary" type="button" data-load="posts">Muat ulang</button></div><div id="postsData" class="post-list"><div class="loading">Memuat posts...</div></div></div><div id="postDetailPanel" class="panel hidden"><div class="toolbar" style="justify-content:space-between"><h2>Detail Post</h2><button id="closeDetail" class="secondary" type="button">Tutup</button></div><div id="postDetail"></div></div></section>
+=======
       <section id="postsPage" class="page hidden"><div class="panel"><div class="page-head"><div><h2>Daftar Posts</h2><p>Pilih sebuah post untuk melihat detail berdasarkan slug.</p></div><button class="secondary" type="button" data-load="posts">Muat ulang</button></div><div id="postsData" class="post-list"><div class="loading">Memuat posts...</div></div></div><div id="postDetailPanel" class="panel hidden"><div class="toolbar" style="justify-content:space-between"><h2>Detail Post</h2><button id="closeDetail" class="secondary" type="button">Tutup</button></div><div id="postDetail"></div></div></section>
+>>>>>>> origin/dev
     </main>
   </div>
 </section>
 <script>
 // Backend tetap menggunakan endpoint yang sudah ada.
+<<<<<<< HEAD
+const API_BASE = location.protocol === "file:" ? "http://localhost:3000/api" : `${location.origin}/api`;
+const TOKEN_KEY = "harisenin_rest_api_token";
+const $ = (id) => document.getElementById(id);
+let currentPage = "overview";
+$("apiAddress").textContent = API_BASE;
+$("apiNote").textContent = `API: ${API_BASE}`;
+=======
 const API_BASE = "http://localhost:3000/api";
 const TOKEN_KEY = "harisenin_rest_api_token";
 const $ = (id) => document.getElementById(id);
 let currentPage = "overview";
+>>>>>>> origin/dev
 
 function getToken(){ return sessionStorage.getItem(TOKEN_KEY); }
 function setMessage(target, text, type="ok") { target.textContent=text; target.className=`message ${type}`; }
@@ -87,7 +115,11 @@ async function apiRequest(path, options={}){
   let result={};
   try { result=raw ? JSON.parse(raw) : {}; } catch { result={message:raw}; }
   if(!response.ok){
+<<<<<<< HEAD
+    if(response.status===401 && options.auth){ logout(false); setMessage($("authMessage"),"Token tidak valid atau sudah kedaluwarsa. Silakan login kembali.","err"); throw new Error("Token tidak valid atau sudah kedaluwarsa. Silakan login kembali."); }
+=======
     if(response.status===401 && options.auth){ logout(false); throw new Error("Token tidak valid atau sudah kedaluwarsa. Silakan login kembali."); }
+>>>>>>> origin/dev
     throw new Error(result.message || `Request gagal (${response.status})`);
   }
   return result;
@@ -122,7 +154,19 @@ $("loginForm").addEventListener("submit",async e=>{
   }catch(error){setMessage($("authMessage"),error.message,"err");}
   finally{btn.disabled=false;btn.textContent="Login";}
 });
+<<<<<<< HEAD
+function logout(showNotice=true){
+  sessionStorage.removeItem(TOKEN_KEY);
+  $("topUser").textContent="";
+  $("authStatus").textContent="Tidak aktif";
+  for(const id of ["profileData","usersData","postsData","postDetail"]) $(id).textContent="";
+  $("postForm").reset();
+  showAuth();
+  if(showNotice)setMessage($("authMessage"),"Kamu sudah logout.","ok");
+}
+=======
 function logout(showNotice=true){sessionStorage.removeItem(TOKEN_KEY);showAuth();if(showNotice)setMessage($("authMessage"),"Kamu sudah logout.","ok");}
+>>>>>>> origin/dev
 $("logoutBtn").addEventListener("click",()=>logout());
 
 const pageInfo={overview:["Overview","Ringkasan koneksi REST API kamu."],profile:["My Profile","Informasi akun yang sedang login."],users:["Users","Daftar pengguna yang tersimpan di database."],posts:["Posts","Daftar artikel dan detail konten."]};
@@ -136,11 +180,29 @@ document.querySelectorAll(".nav-btn").forEach(btn=>btn.addEventListener("click",
 $("refreshBtn").addEventListener("click",()=>openPage(currentPage));
 document.querySelectorAll("[data-load]").forEach(btn=>btn.addEventListener("click",()=>btn.dataset.load==="users"?loadUsers():loadPosts()));
 async function checkConnection(){
+<<<<<<< HEAD
+  $("authStatus").textContent="Memeriksa...";
+  $("connectionStatus").textContent="Memeriksa profil, users, dan posts...";
+  try {
+    const profile=await apiRequest("/profile",{auth:true});
+    const [users,posts]=await Promise.all([apiRequest("/users",{auth:true}),apiRequest("/posts")]);
+    if(!getToken()) return;
+    $("topUser").textContent=`Login sebagai ${profile.data.name}`;
+    $("authStatus").textContent="Terverifikasi";
+    $("connectionStatus").textContent=`Terhubung ke MySQL melalui API. ${users.data.length} user dan ${posts.data.length} post.`;
+    $("connectionStatus").style.color="var(--green)";
+  } catch(error) {
+    $("authStatus").textContent="Gagal diverifikasi";
+    $("connectionStatus").textContent=error.message;
+    $("connectionStatus").style.color="var(--red)";
+  }
+=======
   $("connectionStatus").textContent="Memeriksa endpoint posts...";
   try{await apiRequest("/posts");$("connectionStatus").textContent="Terhubung ke Backend. Endpoint GET /api/posts berhasil diakses.";$("connectionStatus").style.color="var(--green)";}
   catch(error){$("connectionStatus").textContent=error.message;$("connectionStatus").style.color="var(--red)";}
   try{const p=await apiRequest("/profile",{auth:true});$("topUser").textContent=p.data?.name?`Login sebagai ${p.data.name}`:"Authenticated";}
   catch{$("topUser").textContent="Sesi aktif";}
+>>>>>>> origin/dev
 }
 function renderProfile(data){
   if(!data||typeof data!=="object"){ $("profileData").textContent="Data profil tidak tersedia.";return; }
@@ -171,6 +233,21 @@ async function loadPostDetail(slug){
     $("postDetailPanel").scrollIntoView({behavior:"smooth",block:"start"});
   }catch(error){$("postDetail").textContent=error.message;}
 }
+<<<<<<< HEAD
+$("postForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const button=$("postForm").querySelector("button[type=submit]");
+  button.disabled=true;button.textContent="Menyimpan...";clearMessage($("postMessage"));
+  try {
+    const result=await apiRequest("/posts",{method:"POST",auth:true,body:JSON.stringify({title:$("postTitle").value,content:$("postContent").value})});
+    $("postForm").reset();
+    setMessage($("postMessage"),"Post berhasil disimpan ke database.");
+    await loadPosts();await loadPostDetail(result.data.slug);
+  } catch(error){setMessage($("postMessage"),error.message,"err");}
+  finally{button.disabled=false;button.textContent="Simpan Post";}
+});
+=======
+>>>>>>> origin/dev
 $("closeDetail").addEventListener("click",()=>$("postDetailPanel").classList.add("hidden"));
 
 if(getToken()){showApp();openPage("overview");}else{showAuth();}

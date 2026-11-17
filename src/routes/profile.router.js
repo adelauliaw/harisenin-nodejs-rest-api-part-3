@@ -1,3 +1,10 @@
+<<<<<<< HEAD
+const router = require("express").Router();
+const { verifyToken } = require("../middlewares/auth");
+const { show } = require("../controllers/profile.controller");
+router.get("/", verifyToken, show);
+module.exports = router;
+=======
 const express =
   require("express");
 
@@ -24,3 +31,4 @@ router.get(
 
 module.exports =
   router;
+>>>>>>> origin/dev

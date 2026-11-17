@@ -37,6 +37,12 @@ module.exports = (
       },
 
       slug: {
+<<<<<<< HEAD
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+      },
+=======
   type:
     DataTypes.STRING,
 
@@ -44,6 +50,7 @@ module.exports = (
 
   unique: true,
 },
+>>>>>>> origin/dev
 
       content: {
         type:
@@ -52,7 +59,10 @@ module.exports = (
         allowNull: true,
       },
     },
+<<<<<<< HEAD
+=======
     
+>>>>>>> origin/dev
 
     {
       sequelize,
@@ -66,4 +76,8 @@ module.exports = (
   );
 
   return post;
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> origin/dev

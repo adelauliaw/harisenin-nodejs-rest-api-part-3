@@ -1,3 +1,10 @@
+<<<<<<< HEAD
+require("dotenv").config();
+
+module.exports = {
+  development: {
+    dialect: "mysql",
+=======
 require("dotenv").config({
   quiet: true,
 });
@@ -11,14 +18,19 @@ const common = {
 module.exports = {
   development: {
     ...common,
+>>>>>>> origin/dev
 
     host:
       process.env.DATABASE_HOST,
 
     port:
       Number(
+<<<<<<< HEAD
+        process.env.DATABASE_PORT || 3306
+=======
         process.env.DATABASE_PORT ||
         3306
+>>>>>>> origin/dev
       ),
 
     username:
@@ -29,6 +41,10 @@ module.exports = {
 
     database:
       process.env.DATABASE_NAME,
+<<<<<<< HEAD
+
+    logging: false,
+=======
   },
 
   test: {
@@ -73,5 +89,6 @@ module.exports = {
 
     database:
       process.env.MYSQLDATABASE,
+>>>>>>> origin/dev
   },
 };
