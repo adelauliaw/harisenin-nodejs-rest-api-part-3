@@ -20,8 +20,8 @@ module.exports = {
             "We built the API with Node.js and consumed it using Next.js.",
 
 
-  created_at: new Date(),
-  updated_at: new Date(),
+  // created_at: new Date(),
+  // updated_at: new Date(),
         },
 
         {
@@ -36,11 +36,11 @@ module.exports = {
           content:
             "One [slug].js file can be used to render multiple post pages.",
 
-          createdAt:
-            new Date(),
+          // createdAt:
+          //   new Date(),
 
-          updatedAt:
-            new Date(),
+          // updatedAt:
+          //   new Date(),
         },
 
         {
@@ -56,8 +56,8 @@ module.exports = {
             "Node.js is my backend and Next.js is my frontend.",
 
 
-  created_at: new Date(),
-  updated_at: new Date(),
+  // created_at: new Date(),
+  // updated_at: new Date(),
         },
       ]
     );

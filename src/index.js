@@ -1,4 +1,5 @@
 require("dotenv").config();
+const path = require("node:path");
 
 const express =
   require("express");
@@ -17,6 +18,7 @@ const app =
   express();
 
 app.use(cors());
+app.use("/dashboard", express.static(path.join(__dirname, "../frontend")));
 
 app.use(
   express.json()
