@@ -1,165 +1,155 @@
-# Next.js Part 1 — Continue from Node.js REST API Part 3
+# Next.js Part 1 --- Build the Frontend Using Existing Node.js REST API
 
-Harisenin Bootcamp — Full-Stack Web Developer
+Harisenin Bootcamp --- Full-Stack Web Developer
 
-> **Goal:** jangan bikin backend baru. Kita lanjutkan project `harisenin-nodejs-rest-api-part-3` yang sudah selesai sampai **Phase 4 — Jest + Supertest**, lalu Next.js menjadi frontend yang memakai data dari backend tersebut.
+## Goal
 
----
+Pada sesi ini kita **langsung fokus membangun frontend menggunakan
+Next.js Pages Router**. Backend Node.js REST API Part 3 sudah tersedia
+dan tidak perlu dibuat ulang.
 
-# What We Already Have
+Next.js akan menggunakan endpoint yang sudah tersedia pada backend
+untuk: - Register dan login. - Mengambil profil user. - Mengambil daftar
+user. - Mengambil daftar post. - Mengambil detail post berdasarkan slug.
 
-Dari project Node.js sebelumnya, kita sudah punya:
+Kita juga akan menyiapkan data contoh melalui **Sequelize Seeder di
+project backend** agar endpoint posts memiliki data dan Next.js dapat
+membaca slug yang akan digunakan pada dynamic route.
 
-```text
-Express.js
-↓
-Routes
-↓
-Validator
-↓
-JWT Middleware
-↓
-Controllers
-↓
-Sequelize
-↓
-MySQL
-```
+> Prinsip pembelajaran: backend yang sudah ada digunakan sebagai sumber
+> data. Fokus coding hari ini adalah membangun Next.js dan
+> menghubungkannya ke API.
 
-Endpoint yang sudah ada:
+------------------------------------------------------------------------
 
-```text
-POST /api/auth/register
-POST /api/auth/login
-GET  /api/users
-GET  /api/profile
-```
+# 1. Arsitektur Aplikasi
 
-Model yang sudah ada:
-
-```text
-User
-Post
-```
-
-Testing yang sudah ada:
-
-```text
-Jest
-Supertest
-```
-
-Sekarang kita lanjutkan flow menjadi:
-
-```text
-MySQL
-↓
-Sequelize
-↓
-Node.js REST API
-↓
-JSON
-↓
-Next.js
-↓
-React Component
-↓
-Browser
-```
-
----
-
-# Final Full-Stack Architecture
-
-```text
+``` text
 BROWSER
-   ↓
-NEXT.JS
-localhost:3000
-   ↓
-getStaticProps / getStaticPaths
-   ↓
-fetch()
-   ↓
-NODE.JS / EXPRESS
-localhost:3001
-   ↓
-ROUTE
-   ↓
-CONTROLLER
-   ↓
-SEQUELIZE
-   ↓
-MYSQL
-   ↓
-JSON RESPONSE
+   |
+   v
+NEXT.JS PAGES ROUTER
+http://localhost:3000
+   |
+   | fetch() / HTTP request
+   v
+NODE.JS + EXPRESS REST API
+http://localhost:3001
+   |
+   v
+ROUTES
+   |
+   v
+MIDDLEWARE (JWT untuk endpoint protected)
+   |
+   v
+CONTROLLERS
+   |
+   v
+SEQUELIZE ORM
+   |
+   v
+MYSQL DATABASE
 ```
 
----
+## Port yang digunakan
 
-# PART A — CONTINUE NODE.JS PROJECT
+  Aplikasi             Port URL
+  ------------------ ------ -------------------------
+  Next.js frontend     3000 `http://localhost:3000`
+  Node.js backend      3001 `http://localhost:3001`
+  MySQL / MariaDB      3306 `localhost:3306`
 
-## 1. Open Existing Node.js Project
+**Penting:** Next.js dan Node.js tidak boleh menggunakan port yang sama.
+Pastikan backend menggunakan `SERVER_PORT=3001`, sedangkan Next.js
+berjalan pada port `3000`.
 
-```bash
-cd harisenin-nodejs-rest-api-part-3
+------------------------------------------------------------------------
+
+# 2. Endpoint Backend yang Digunakan
+
+Kita menggunakan endpoint yang sudah tersedia. Jangan membuat backend,
+controller, atau endpoint baru untuk latihan ini.
+
+  ----------------------------------------------------------------------------
+  Method            Endpoint               Kegunaan          Authentication
+  ----------------- ---------------------- ----------------- -----------------
+  `POST`            `/api/auth/register`   Membuat akun      Tidak
+
+  `POST`            `/api/auth/login`      Login dan         Tidak
+                                           memperoleh JWT    
+
+  `GET`             `/api/profile`         Mengambil profil  Bearer Token
+                                           user aktif        
+
+  `GET`             `/api/users`           Mengambil daftar  Bearer Token
+                                           user              
+
+  `GET`             `/api/posts`           Mengambil daftar  Tidak
+                                           post              
+
+  `GET`             `/api/posts/:slug`     Mengambil detail  Tidak
+                                           post berdasarkan  
+                                           slug              
+  ----------------------------------------------------------------------------
+
+Contoh URL lengkap:
+
+``` text
+POST http://localhost:3001/api/auth/register
+POST http://localhost:3001/api/auth/login
+GET  http://localhost:3001/api/profile
+GET  http://localhost:3001/api/users
+GET  http://localhost:3001/api/posts
+GET  http://localhost:3001/api/posts/belajar-nextjs-routing
 ```
 
-Pastikan semua dependency sudah ada:
+Endpoint `/api/profile` dan `/api/users` membutuhkan header:
 
-```bash
-npm install
+``` http
+Authorization: Bearer YOUR_JWT_TOKEN
 ```
 
-Check branch:
+## Bentuk response API
 
-```bash
-git branch
+Endpoint posts menggunakan struktur response seperti berikut:
+
+``` json
+{
+  "message": "Success",
+  "data": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "title": "Belajar Next.js Routing",
+      "slug": "belajar-nextjs-routing",
+      "content": "Next.js Pages Router menggunakan file di folder pages sebagai route.",
+      "user": {
+        "id": 1,
+        "name": "Bootcamp Student",
+        "email": "student@example.com"
+      }
+    }
+  ]
+}
 ```
 
-Dari README sebelumnya kita sudah punya:
+Perhatikan bahwa data artikel berada di dalam `data`, bukan langsung di
+root response. Karena itu helper Next.js harus mengembalikan
+`result.data`.
 
-```text
-main
-phase-1-sequelize
-phase-2-auth
-phase-3-validator
-phase-4-testing
-```
+------------------------------------------------------------------------
 
-Pindah ke Phase 4:
+# 3. Persiapan Backend Sebelum Membuat Next.js
 
-```bash
-git switch phase-4-testing
-```
+Bagian ini hanya checkpoint singkat. Kita tidak membangun ulang backend.
 
-Buat branch baru:
+## 3.1 Pastikan backend berjalan di port 3001
 
-```bash
-git switch -c phase-5-nextjs-integration
-```
+Di project backend `harisenin-nodejs-rest-api-part-3`, pastikan `.env`
+menggunakan:
 
----
-
-# 2. Change Backend Port
-
-Sebelumnya Node.js menggunakan:
-
-```env
-SERVER_PORT=3000
-```
-
-Next.js juga menggunakan port `3000`.
-
-Supaya tidak tabrakan, update `.env` backend:
-
-```env
-SERVER_PORT=3001
-```
-
-Full example:
-
-```env
+``` env
 SERVER_PORT=3001
 
 DATABASE_HOST=localhost
@@ -170,855 +160,592 @@ DATABASE_PASSWORD=
 DATABASE_NAME=fsd_bootcamp
 DATABASE_NAME_TEST=fsd_bootcamp_test
 
-JWT_SECRET=harisenin_super_secret
+JWT_SECRET=your_backend_jwt_secret
 ```
 
-Update `.env.example`:
+Gunakan password MySQL yang benar di komputer masing-masing. Jika MySQL
+memang tidak memakai password, biarkan `DATABASE_PASSWORD` kosong.
 
-```env
-SERVER_PORT=3001
+Pastikan `src/index.js` menggunakan:
 
-DATABASE_HOST=localhost
-DATABASE_PORT=3306
-DATABASE_USER=root
-DATABASE_PASSWORD=your_password
-
-DATABASE_NAME=fsd_bootcamp
-DATABASE_NAME_TEST=fsd_bootcamp_test
-
-JWT_SECRET=your_jwt_secret
+``` js
+const PORT = process.env.SERVER_PORT || 3001;
 ```
 
-Run:
+Express tetap menjadi REST API. Jika sebelumnya Express menyajikan HTML
+lama melalui `express.static()` pada route `/dashboard`, route tersebut
+tidak digunakan lagi oleh frontend Next.js. Middleware API seperti
+`cors()`, `express.json()`, `routes`, dan koneksi Sequelize tetap
+dipertahankan.
 
-```bash
+Jalankan backend:
+
+``` bash
 npm run dev
 ```
 
 Expected:
 
-```text
+``` text
 Database connected
 Server running on http://localhost:3001
 ```
 
-Test:
+## 3.2 Pastikan endpoint sudah dapat diakses
 
-```text
-GET http://localhost:3001
+Sebelum membuka project Next.js, tes endpoint berikut melalui browser
+atau Postman:
+
+``` text
+GET http://localhost:3001/
+GET http://localhost:3001/api/posts
 ```
 
----
+Untuk endpoint protected, login terlebih dahulu melalui:
 
-# PART B — PREPARE POST DATA FOR NEXT.JS
-
-Project Node.js sebelumnya sudah punya model:
-
-```text
-src/models/post.js
+``` text
+POST http://localhost:3001/api/auth/login
 ```
 
-dengan:
+Gunakan token dari response login untuk menguji:
 
-```text
-user_id
-title
-content
+``` text
+GET http://localhost:3001/api/profile
+GET http://localhost:3001/api/users
 ```
 
-Next.js akan menggunakan dynamic URL:
+Jika endpoint posts belum tersedia atau belum mengembalikan field
+`slug`, selesaikan kondisi backend tersebut terlebih dahulu. Panduan ini
+mengasumsikan endpoint posts yang dipakai sudah tersedia.
 
-```text
+------------------------------------------------------------------------
+
+# 4. Seeder --- Siapkan Data Post dan Slug
+
+**Seeder dijalankan di project backend Node.js, bukan di project
+Next.js.**
+
+Tujuan seeder adalah mengisi tabel `posts` dengan data contoh. Next.js
+nantinya mengambil data dan slug melalui `GET /api/posts`.
+
+Alur:
+
+``` text
+Sequelize Seeder
+      |
+      v
+MySQL: posts
+      |
+      v
+GET /api/posts
+      |
+      v
+Next.js getStaticPaths()
+      |
+      v
 /posts/[slug]
 ```
 
-Jadi kita tambahkan:
+## 4.1 Pastikan sudah ada user
 
-```text
-slug
+Tabel `posts` memiliki `user_id` yang berelasi dengan tabel `users`.
+Jadi, pastikan minimal satu user sudah terdaftar.
+
+Jika belum ada, gunakan endpoint register melalui Postman:
+
+``` http
+POST http://localhost:3001/api/auth/register
+Content-Type: application/json
 ```
 
----
+Body:
 
-# 3. Create New Migration for `slug`
-
-Jangan edit migration lama yang sudah pernah dijalankan.
-
-Run:
-
-```bash
-npx sequelize-cli migration:generate --name add-slug-to-posts
+``` json
+{
+  "name": "Bootcamp Student",
+  "email": "student@example.com",
+  "password": "Belajar123!"
+}
 ```
 
-Buka migration baru di:
+Password contoh mengikuti aturan validator backend: minimal 8 karakter
+dengan huruf besar, huruf kecil, angka, dan simbol.
 
-```text
-src/database/migrations/
+## 4.2 Generate Seeder
+
+Buka terminal pada root project backend:
+
+``` bash
+npx sequelize-cli seed:generate --name sample-posts
 ```
 
-Isi:
+Dengan konfigurasi `.sequelizerc` yang sudah mengarahkan `seeders-path`
+ke `src/database/seeders`, file seeder akan dibuat di folder:
 
-```js
+``` text
+src/database/seeders/
+```
+
+Buka file seeder yang baru dibuat, lalu isi:
+
+``` js
 "use strict";
 
 module.exports = {
-  async up(
-    queryInterface,
-    Sequelize
-  ) {
-    await queryInterface.addColumn(
-      "posts",
-      "slug",
+  async up(queryInterface, Sequelize) {
+    const users = await queryInterface.sequelize.query(
+      "SELECT id FROM users ORDER BY id ASC LIMIT 1",
       {
-        type: Sequelize.STRING,
-        allowNull: true,
-        unique: true,
+        type: Sequelize.QueryTypes.SELECT,
       }
     );
-  },
 
-  async down(
-    queryInterface
-  ) {
-    await queryInterface.removeColumn(
-      "posts",
-      "slug"
-    );
-  },
-};
-```
+    const userId = users[0]?.id;
 
-Run migration development:
-
-```bash
-npx sequelize-cli db:migrate
-```
-
-Run migration test:
-
-```bash
-npx sequelize-cli db:migrate --env test
-```
-
-Check DBeaver:
-
-```sql
-USE fsd_bootcamp;
-
-DESCRIBE posts;
-```
-
-Expected ada:
-
-```text
-slug
-```
-
----
-
-# 4. Update Post Model
-
-Open:
-
-```text
-src/models/post.js
-```
-
-Tambahkan `slug`:
-
-```js
-"use strict";
-
-const {
-  Model,
-} = require("sequelize");
-
-module.exports = (
-  sequelize,
-  DataTypes
-) => {
-  class post extends Model {
-    static associate(models) {
-      post.belongsTo(
-        models.user,
-        {
-          foreignKey: "user_id",
-          as: "user",
-        }
+    if (!userId) {
+      throw new Error(
+        "User belum tersedia. Register user terlebih dahulu."
       );
     }
-  }
 
-  post.init(
-    {
-      user_id: {
-        type:
-          DataTypes.INTEGER,
+    const now = new Date();
 
-        allowNull: false,
+    await queryInterface.bulkInsert("posts", [
+      {
+        user_id: userId,
+        title: "Belajar Next.js Routing",
+        slug: "belajar-nextjs-routing",
+        content:
+          "Next.js Pages Router menggunakan file di folder pages sebagai route.",
+        created_at: now,
+        updated_at: now,
       },
-
-      title: {
-        type:
-          DataTypes.STRING,
-
-        allowNull: false,
+      {
+        user_id: userId,
+        title: "Dynamic Route dengan Slug",
+        slug: "dynamic-route-dengan-slug",
+        content:
+          "Satu file [slug].js dapat digunakan untuk menampilkan banyak detail page.",
+        created_at: now,
+        updated_at: now,
       },
-
-      slug: {
-        type:
-          DataTypes.STRING,
-
-        allowNull: true,
-
-        unique: true,
+      {
+        user_id: userId,
+        title: "My First Full Stack Post",
+        slug: "my-first-full-stack-post",
+        content:
+          "Node.js menjadi backend dan Next.js menjadi frontend aplikasi full-stack.",
+        created_at: now,
+        updated_at: now,
       },
+    ]);
+  },
 
-      content: {
-        type:
-          DataTypes.TEXT,
-
-        allowNull: true,
-      },
-    },
-
-    {
-      sequelize,
-
-      modelName: "post",
-
-      tableName: "posts",
-
-      underscored: true,
-    }
-  );
-
-  return post;
+  async down(queryInterface) {
+    await queryInterface.bulkDelete("posts", {
+      slug: [
+        "belajar-nextjs-routing",
+        "dynamic-route-dengan-slug",
+        "my-first-full-stack-post",
+      ],
+    });
+  },
 };
 ```
 
----
+**Penjelasan:** - Seeder mencari `id` user yang sudah ada. - `user_id`
+digunakan untuk memenuhi relasi foreign key. - Setiap post memiliki
+`title`, `slug`, dan `content`. - Slug dibuat unik karena digunakan
+sebagai identitas URL artikel.
 
-# PART C — CREATE PUBLIC POSTS API
+## 4.3 Jalankan Seeder
 
-Untuk Next.js Part 1:
+Dari root project backend:
 
-```text
-READ posts
-→ PUBLIC
+``` bash
+npx sequelize-cli db:seed:all
 ```
 
-Kita belum membuat create/update/delete dari Next.js.
+Jika ingin membatalkan seluruh seeder:
 
-Authentication dari Part 3 tetap dipakai untuk endpoint protected yang sudah ada.
-
----
-
-# 5. Create Post Controller
-
-Create:
-
-```text
-src/controllers/post.controller.js
+``` bash
+npx sequelize-cli db:seed:undo:all
 ```
 
-Isi:
+Jangan menjalankan seeder berulang kali dengan slug yang sama tanpa
+melakukan undo atau memeriksa data terlebih dahulu, karena kolom `slug`
+memiliki aturan unique.
 
-```js
-const {
-  post: PostModel,
-  user: UserModel,
-} = require("../models");
+## 4.4 Verifikasi Seeder
 
-const index = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const posts =
-      await PostModel.findAll({
-        attributes: [
-          "id",
-          "user_id",
-          "title",
-          "slug",
-          "content",
-        ],
+Di DBeaver:
 
-        include: [
-          {
-            model: UserModel,
-            as: "user",
-            attributes: [
-              "id",
-              "name",
-              "email",
-            ],
-          },
-        ],
-
-        order: [
-          [
-            "id",
-            "DESC",
-          ],
-        ],
-      });
-
-    return res
-      .status(200)
-      .json({
-        message: "Success",
-        data: posts,
-      });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const showBySlug = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const {
-      slug,
-    } = req.params;
-
-    const post =
-      await PostModel.findOne({
-        where: {
-          slug,
-        },
-
-        attributes: [
-          "id",
-          "user_id",
-          "title",
-          "slug",
-          "content",
-        ],
-
-        include: [
-          {
-            model: UserModel,
-            as: "user",
-            attributes: [
-              "id",
-              "name",
-              "email",
-            ],
-          },
-        ],
-      });
-
-    if (!post) {
-      return res
-        .status(404)
-        .json({
-          message:
-            "Post not found",
-
-          data: null,
-        });
-    }
-
-    return res
-      .status(200)
-      .json({
-        message: "Success",
-        data: post,
-      });
-  } catch (error) {
-    next(error);
-  }
-};
-
-module.exports = {
-  index,
-  showBySlug,
-};
-```
-
----
-
-# 6. Create Post Router
-
-Create:
-
-```text
-src/routes/post.router.js
-```
-
-Isi:
-
-```js
-const express =
-  require("express");
-
-const {
-  index,
-  showBySlug,
-} = require(
-  "../controllers/post.controller"
-);
-
-const router =
-  express.Router();
-
-router.get(
-  "/",
-  index
-);
-
-router.get(
-  "/:slug",
-  showBySlug
-);
-
-module.exports =
-  router;
-```
-
----
-
-# 7. Add Post Router to Main Router
-
-Open:
-
-```text
-src/routes/index.js
-```
-
-Tambahkan:
-
-```js
-const postRouter =
-  require("./post.router");
-```
-
-Tambahkan:
-
-```js
-router.use(
-  "/posts",
-  postRouter
-);
-```
-
-Contoh:
-
-```js
-const express =
-  require("express");
-
-const authRouter =
-  require("./auth.router");
-
-const userRouter =
-  require("./user.router");
-
-const profileRouter =
-  require("./profile.router");
-
-const postRouter =
-  require("./post.router");
-
-const router =
-  express.Router();
-
-router.use(
-  "/auth",
-  authRouter
-);
-
-router.use(
-  "/users",
-  userRouter
-);
-
-router.use(
-  "/profile",
-  profileRouter
-);
-
-router.use(
-  "/posts",
-  postRouter
-);
-
-module.exports =
-  router;
-```
-
----
-
-# PART D — ADD SAMPLE POSTS
-
-## 8. Check User ID
-
-DBeaver:
-
-```sql
+``` sql
 USE fsd_bootcamp;
 
 SELECT
   id,
-  name,
-  email
-FROM users;
-```
-
-Pilih `id` user yang sudah ada.
-
----
-
-# 9. Insert Sample Posts
-
-Contoh menggunakan:
-
-```text
-user_id = 1
-```
-
-Run:
-
-```sql
-INSERT INTO posts
-(
   user_id,
   title,
   slug,
-  content,
-  created_at,
-  updated_at
-)
-VALUES
-(
-  1,
-  'Belajar Next.js Routing',
-  'belajar-nextjs-routing',
-  'Next.js Pages Router menggunakan file di folder pages sebagai route.',
-  NOW(),
-  NOW()
-),
-(
-  1,
-  'Dynamic Route dengan Slug',
-  'dynamic-route-dengan-slug',
-  'Satu file [slug].js dapat digunakan untuk menampilkan banyak detail page.',
-  NOW(),
-  NOW()
-);
+  content
+FROM posts
+ORDER BY id ASC;
 ```
 
-Check:
+Pastikan tiga artikel sudah masuk ke database.
 
-```sql
-SELECT
-  id,
-  user_id,
-  title,
-  slug
-FROM posts;
+Kemudian tes:
+
+``` text
+GET http://localhost:3001/api/posts
 ```
 
----
+Salin salah satu slug dari response, lalu tes:
 
-# PART E — TEST BACKEND
-
-## 10. Run Node.js
-
-```bash
-npm run dev
+``` text
+GET http://localhost:3001/api/posts/belajar-nextjs-routing
 ```
 
-Expected:
+Jika berhasil, backend siap digunakan oleh Next.js.
 
-```text
-Database connected
-Server running on http://localhost:3001
-```
+------------------------------------------------------------------------
 
----
+# 5. Create Next.js Project from Scratch
 
-# 11. Test Posts List
+Sekarang kita fokus ke frontend.
 
-Postman:
+Buka terminal baru. Jangan matikan terminal backend.
 
-```text
-GET
-http://localhost:3001/api/posts
-```
+Jalankan:
 
-Expected:
-
-```json
-{
-  "message": "Success",
-  "data": [
-    {
-      "id": 1,
-      "user_id": 1,
-      "title": "Belajar Next.js Routing",
-      "slug": "belajar-nextjs-routing",
-      "content": "Next.js Pages Router menggunakan file di folder pages sebagai route."
-    }
-  ]
-}
-```
-
----
-
-# 12. Test Post Detail
-
-```text
-GET
-http://localhost:3001/api/posts/belajar-nextjs-routing
-```
-
-Expected:
-
-```json
-{
-  "message": "Success",
-  "data": {
-    "id": 1,
-    "title": "Belajar Next.js Routing",
-    "slug": "belajar-nextjs-routing"
-  }
-}
-```
-
-Test unknown:
-
-```text
-GET
-http://localhost:3001/api/posts/post-tidak-ada
-```
-
-Expected:
-
-```text
-404
-```
-
----
-
-# BACKEND CHECKPOINT
-
-```text
-[ ] phase-5-nextjs-integration created
-
-[ ] Node.js runs on 3001
-
-[ ] MySQL runs
-
-[ ] posts table has slug
-
-[ ] sample posts exist
-
-[ ] GET /api/posts works
-
-[ ] GET /api/posts/:slug works
-
-[ ] unknown slug returns 404
-```
-
----
-
-# PART F — CREATE NEXT.JS FRONTEND
-
-## 13. Open New Terminal
-
-Jangan matikan Node.js.
-
-Sekarang kita pakai dua terminal:
-
-```text
-TERMINAL 1
-
-Node.js
-http://localhost:3001
-```
-
-```text
-TERMINAL 2
-
-Next.js
-http://localhost:3000
-```
-
----
-
-# 14. Create Next.js Project
-
-Run:
-
-```bash
+``` bash
 npx create-next-app@latest
 ```
 
-Project name:
+Nama project:
 
-```text
+``` text
 harisenin-nextjs-part-1
 ```
 
-Pilih:
+Pilih konfigurasi berikut:
 
-```text
-No, customize settings
-```
+  Pertanyaan                     Pilihan
+  ------------------------------ ---------
+  TypeScript                     No
+  Linter                         ESLint
+  React Compiler                 No
+  Tailwind CSS                   No
+  Code inside `src/` directory   No
+  App Router                     No
+  Customize import alias         No
 
-Gunakan:
+**Penting:** pilih `App Router = No`, karena materi ini menggunakan
+Pages Router, `getStaticProps()`, dan `getStaticPaths()`.
 
-```text
-TypeScript?
-No
+Masuk ke project:
 
-Linter?
-ESLint
-
-React Compiler?
-No
-
-Tailwind CSS?
-No
-
-Code inside src/ directory?
-No
-
-App Router?
-No
-
-Customize import alias?
-No
-```
-
-> **IMPORTANT:** pilih `App Router = No` karena kelas ini menggunakan Pages Router, `getStaticProps`, dan `getStaticPaths`.
-
----
-
-# 15. Run Next.js
-
-```bash
+``` bash
 cd harisenin-nextjs-part-1
 ```
 
-```bash
+Jalankan:
+
+``` bash
 npm run dev
 ```
 
-Expected:
+Buka:
 
-```text
+``` text
 http://localhost:3000
 ```
 
----
+------------------------------------------------------------------------
 
-# 16. Next.js Project Structure
+# 6. Add Environment Variables untuk Next.js
 
-Kita akan membuat:
+Buat file `.env.local` di root project Next.js.
 
-```text
+``` env
+API_URL=http://localhost:3001
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+Buat juga `.env.example`:
+
+``` env
+API_URL=http://localhost:3001
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+## Fungsi masing-masing environment variable
+
+  -----------------------------------------------------------------------
+  Variable                            Digunakan untuk
+  ----------------------------------- -----------------------------------
+  `API_URL`                           Request dari server Next.js,
+                                      seperti `getStaticProps()` dan
+                                      `getStaticPaths()`
+
+  `NEXT_PUBLIC_API_URL`               Request dari browser, seperti
+                                      register, login, profile, dan users
+  -----------------------------------------------------------------------
+
+`NEXT_PUBLIC_API_URL` boleh terlihat di browser karena hanya berisi
+alamat API. **Jangan pernah menaruh `JWT_SECRET`, password database,
+atau secret backend di environment variable berawalan `NEXT_PUBLIC_`.**
+
+Pastikan `.env.local` tidak ikut di-push ke Git. Setelah mengubah file
+environment, restart Next.js:
+
+``` bash
+Ctrl + C
+npm run dev
+```
+
+------------------------------------------------------------------------
+
+# 7. Next.js Project Structure
+
+Buat struktur berikut:
+
+``` text
 harisenin-nextjs-part-1/
+|
 ├── pages/
 │   ├── _app.js
 │   ├── index.js
-│   ├── about.js
+│   ├── login.js
+│   ├── register.js
+│   ├── profile.js
+│   ├── users.js
 │   └── posts/
 │       ├── index.js
 │       └── [slug].js
-│
+|
 ├── components/
 │   ├── Layout.js
 │   ├── Navbar.js
 │   └── PostCard.js
-│
+|
 ├── lib/
-│   └── api.js
-│
+│   ├── api.js
+│   └── auth.js
+|
 ├── styles/
 │   └── globals.css
-│
+|
 ├── .env.local
 ├── .env.example
 └── public/
 ```
 
-Create folders:
+Fungsi folder:
 
-Git Bash:
+  Folder / File   Fungsi
+  --------------- -------------------------------------------
+  `pages/`        Membuat halaman dan URL
+  `components/`   Menyimpan UI yang dapat digunakan kembali
+  `lib/api.js`    Mengelola request ke REST API
+  `lib/auth.js`   Mengelola token di browser
+  `styles/`       Menyimpan global CSS
+  `.env.local`    Menyimpan alamat API lokal
 
-```bash
-mkdir -p components lib pages/posts
+Buat folder melalui Git Bash:
+
+``` bash
+mkdir -p components lib pages/posts styles
 ```
 
-Windows CMD / PowerShell dapat dibuat manual dari VS Code.
+------------------------------------------------------------------------
 
----
+# 8. Create API Helper
 
-# PART G — NEXT.JS ENVIRONMENT
+Buat file:
 
-## 17. Create `.env.local`
-
-Create:
-
-```text
-.env.local
-```
-
-Isi:
-
-```env
-API_URL=http://localhost:3001
-```
-
-Create:
-
-```text
-.env.example
+``` text
+lib/api.js
 ```
 
 Isi:
 
-```env
-API_URL=http://localhost:3001
+``` js
+const SERVER_API_URL = process.env.API_URL;
+const CLIENT_API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+export async function getAllPosts() {
+  const response = await fetch(
+    `${SERVER_API_URL}/api/posts`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch posts");
+  }
+
+  const result = await response.json();
+
+  return result.data;
+}
+
+export async function getPostBySlug(slug) {
+  const response = await fetch(
+    `${SERVER_API_URL}/api/posts/${encodeURIComponent(slug)}`
+  );
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch post");
+  }
+
+  const result = await response.json();
+
+  return result.data;
+}
+
+export async function apiRequest(
+  path,
+  options = {}
+) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+  };
+
+  if (options.auth) {
+    const token = sessionStorage.getItem(
+      "harisenin_rest_api_token"
+    );
+
+    if (!token) {
+      throw new Error("Token tidak ditemukan. Silakan login.");
+    }
+
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(
+    `${CLIENT_API_URL}/api${path}`,
+    {
+      ...options,
+      headers,
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message || `Request gagal (${response.status})`
+    );
+  }
+
+  return result;
+}
 ```
 
-Check `.gitignore`.
+**Catatan penting:** `getAllPosts()` dan `getPostBySlug()` digunakan
+oleh fungsi data-fetching Pages Router di sisi server. `apiRequest()`
+digunakan dari event handler atau `useEffect()` di browser. Jangan
+membaca `sessionStorage` saat render server karena `sessionStorage`
+hanya tersedia di browser.
 
-Pastikan environment local tidak perlu di-push jika sudah di-ignore oleh project.
+## Memahami API Helper
 
----
+``` text
+Next.js Page
+     |
+     v
+lib/api.js
+     |
+     v
+fetch()
+     |
+     v
+Node.js REST API
+     |
+     v
+JSON Response
+     |
+     v
+Next.js
+```
 
-# PART H — BASIC PAGES
+Helper memisahkan logika request dari komponen halaman agar kode lebih
+rapi dan mudah digunakan ulang.
 
-## 18. Home Page
+------------------------------------------------------------------------
 
-Open:
+# 9. Create Authentication Helper
 
-```text
+Buat file:
+
+``` text
+lib/auth.js
+```
+
+Isi:
+
+``` js
+export const TOKEN_KEY = "harisenin_rest_api_token";
+
+export function saveToken(token) {
+  sessionStorage.setItem(TOKEN_KEY, token);
+}
+
+export function getToken() {
+  return sessionStorage.getItem(TOKEN_KEY);
+}
+
+export function removeToken() {
+  sessionStorage.removeItem(TOKEN_KEY);
+}
+```
+
+Token hanya diakses dari browser. Dalam latihan ini kita menggunakan
+`sessionStorage` seperti dashboard HTML sebelumnya. Untuk aplikasi
+production, pertimbangkan mekanisme session yang lebih aman, misalnya
+HttpOnly Secure Cookie.
+
+------------------------------------------------------------------------
+
+# 10. Create Basic Pages
+
+## 10.1 Home Page
+
+Buka:
+
+``` text
 pages/index.js
 ```
 
 Isi:
 
-```jsx
+``` jsx
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main>
-      <h1>
-        Node.js + Next.js
-      </h1>
+      <h1>Node.js + Next.js</h1>
 
       <p>
-        Backend dari Node.js.
-        Frontend dari Next.js.
+        Backend menggunakan Node.js REST API.
+        Frontend menggunakan Next.js Pages Router.
+      </p>
+
+      <Link href="/posts">
+        Explore Posts
+      </Link>
+
+      <p>
+        <Link href="/login">Login</Link>
+        {" | "}
+        <Link href="/register">Register</Link>
       </p>
     </main>
   );
@@ -1027,341 +754,404 @@ export default function Home() {
 
 Test:
 
-```text
+``` text
 http://localhost:3000
 ```
 
----
+## 10.2 Login Page
 
-# 19. About Page
+Buat:
 
-Create:
-
-```text
-pages/about.js
+``` text
+pages/login.js
 ```
 
 Isi:
 
-```jsx
-export default function About() {
+``` jsx
+import { useState } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import { apiRequest } from "../lib/api";
+import { saveToken } from "../lib/auth";
+
+export default function Login() {
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const result = await apiRequest("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!result.data?.token) {
+        throw new Error("Token tidak ditemukan.");
+      }
+
+      saveToken(result.data.token);
+
+      router.push("/profile");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main>
-      <h1>About</h1>
+      <h1>Login</h1>
+
+      <form onSubmit={handleSubmit}>
+        <label>Email</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+
+        <label>Password</label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+
+        <button disabled={loading}>
+          {loading ? "Loading..." : "Login"}
+        </button>
+      </form>
+
+      {message && <p>{message}</p>}
 
       <p>
-        Full-stack project using
-        Node.js REST API and
-        Next.js Pages Router.
+        Belum punya akun? <Link href="/register">Register</Link>
       </p>
     </main>
   );
 }
 ```
 
-Test:
+Alur login:
 
-```text
-http://localhost:3000/about
+``` text
+Login Form
+   |
+   v
+POST /api/auth/login
+   |
+   v
+Node.js Validator
+   |
+   v
+Auth Controller
+   |
+   v
+bcrypt.compare()
+   |
+   v
+jwt.sign()
+   |
+   v
+JWT Token
+   |
+   v
+sessionStorage
 ```
 
----
+## 10.3 Register Page
 
-# PART I — NAVIGATION + LAYOUT
+Buat:
 
-## 20. Navbar
-
-Create:
-
-```text
-components/Navbar.js
+``` text
+pages/register.js
 ```
 
 Isi:
 
-```jsx
-import Link
-  from "next/link";
+``` jsx
+import { useState } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import { apiRequest } from "../lib/api";
 
-export default function Navbar() {
+export default function Register() {
+  const router = useRouter();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const result = await apiRequest("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      setMessage(result.message || "Register berhasil.");
+
+      router.push("/login");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <nav>
-      <Link href="/">
-        Home
-      </Link>
+    <main>
+      <h1>Register</h1>
 
-      {" | "}
+      <form onSubmit={handleSubmit}>
+        <label>Nama</label>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
 
-      <Link href="/about">
-        About
-      </Link>
+        <label>Email</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
 
-      {" | "}
+        <label>Password</label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
-      <Link href="/posts">
-        Posts
-      </Link>
-    </nav>
+        <button disabled={loading}>
+          {loading ? "Mendaftarkan..." : "Register"}
+        </button>
+      </form>
+
+      {message && <p>{message}</p>}
+
+      <p>
+        Sudah punya akun? <Link href="/login">Login</Link>
+      </p>
+    </main>
   );
 }
 ```
 
----
+Password tetap divalidasi oleh backend. Frontend juga dapat menambahkan
+validasi awal untuk memberikan feedback lebih cepat kepada user.
 
-# 21. Layout
+------------------------------------------------------------------------
 
-Create:
+# 11. Protected Page --- Profile
 
-```text
-components/Layout.js
+Buat:
+
+``` text
+pages/profile.js
 ```
 
 Isi:
 
-```jsx
-import Navbar
-  from "./Navbar";
+``` jsx
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import { apiRequest } from "../lib/api";
+import { getToken, removeToken } from "../lib/auth";
 
-export default function Layout({
-  children,
-}) {
+export default function Profile() {
+  const router = useRouter();
+
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!getToken()) {
+      router.replace("/login");
+      return;
+    }
+
+    apiRequest("/profile", { auth: true })
+      .then((result) => setProfile(result.data))
+      .catch((error) => {
+        setMessage(error.message);
+
+        if (error.message.toLowerCase().includes("token")) {
+          removeToken();
+          router.replace("/login");
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [router]);
+
+  const handleLogout = () => {
+    removeToken();
+    router.push("/login");
+  };
+
+  if (loading) return <p>Loading profile...</p>;
+
   return (
-    <>
-      <Navbar />
+    <main>
+      <h1>My Profile</h1>
 
-      {children}
-    </>
+      {message && <p>{message}</p>}
+
+      {profile && (
+        <>
+          <p>Name: {profile.name}</p>
+          <p>Email: {profile.email}</p>
+        </>
+      )}
+
+      <button onClick={handleLogout}>
+        Logout
+      </button>
+    </main>
   );
 }
 ```
 
----
+Endpoint yang digunakan:
 
-# 22. `_app.js`
+``` text
+GET http://localhost:3001/api/profile
+```
 
-Open:
+Request membawa:
 
-```text
-pages/_app.js
+``` http
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+Catatan: contoh redirect ini merupakan proteksi tampilan di sisi client.
+Keamanan data tetap harus ditegakkan oleh middleware JWT pada backend.
+
+------------------------------------------------------------------------
+
+# 12. Protected Page --- Users
+
+Buat:
+
+``` text
+pages/users.js
 ```
 
 Isi:
 
-```jsx
-import "../styles/globals.css";
+``` jsx
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import { apiRequest } from "../lib/api";
+import { getToken } from "../lib/auth";
 
-import Layout
-  from "../components/Layout";
+export default function Users() {
+  const router = useRouter();
 
-export default function App({
-  Component,
-  pageProps,
-}) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!getToken()) {
+      router.replace("/login");
+      return;
+    }
+
+    apiRequest("/users", { auth: true })
+      .then((result) => setUsers(result.data || []))
+      .catch((error) => setMessage(error.message))
+      .finally(() => setLoading(false));
+  }, [router]);
+
+  if (loading) return <p>Loading users...</p>;
+
   return (
-    <Layout>
-      <Component
-        {...pageProps}
-      />
-    </Layout>
+    <main>
+      <h1>Users</h1>
+
+      {message && <p>{message}</p>}
+
+      {users.map((user) => (
+        <article key={user.id}>
+          <h3>{user.name}</h3>
+          <p>{user.email}</p>
+        </article>
+      ))}
+    </main>
   );
 }
 ```
 
----
+Endpoint:
 
-# 23. Global CSS
-
-Open:
-
-```text
-styles/globals.css
+``` text
+GET http://localhost:3001/api/users
 ```
 
-Isi:
+------------------------------------------------------------------------
 
-```css
-* {
-  box-sizing:
-    border-box;
-}
+# 13. Posts List --- getStaticProps
 
-body {
-  margin:
-    0;
+Sekarang kita mulai menggunakan data yang berasal dari MySQL melalui
+Node.js.
 
-  font-family:
-    Arial,
-    sans-serif;
+Buat:
 
-  background:
-    #f7f7f7;
-
-  color:
-    #111;
-}
-
-nav {
-  padding:
-    20px 40px;
-
-  background:
-    #111;
-}
-
-nav a {
-  color:
-    white;
-
-  text-decoration:
-    none;
-
-  margin-right:
-    12px;
-}
-
-main {
-  max-width:
-    900px;
-
-  margin:
-    0 auto;
-
-  padding:
-    48px 24px;
-}
-```
-
----
-
-# PART J — CONNECT NEXT.JS TO NODE.JS
-
-## 24. Create API Helper
-
-Create:
-
-```text
-lib/api.js
-```
-
-Isi:
-
-```js
-const API_URL =
-  process.env.API_URL;
-
-export async function getAllPosts() {
-  const response =
-    await fetch(
-      `${API_URL}/api/posts`
-    );
-
-  if (!response.ok) {
-    throw new Error(
-      "Failed to fetch posts"
-    );
-  }
-
-  const result =
-    await response.json();
-
-  return result.data;
-}
-
-export async function getPostBySlug(
-  slug
-) {
-  const response =
-    await fetch(
-      `${API_URL}/api/posts/${slug}`
-    );
-
-  if (!response.ok) {
-    throw new Error(
-      "Failed to fetch post"
-    );
-  }
-
-  const result =
-    await response.json();
-
-  return result.data;
-}
-```
-
-Flow:
-
-```text
-Next.js
-   ↓
-lib/api.js
-   ↓
-fetch()
-   ↓
-Node.js API
-   ↓
-JSON
-```
-
----
-
-# PART K — POSTS LIST + getStaticProps
-
-## 25. Create PostCard
-
-Create:
-
-```text
+``` text
 components/PostCard.js
 ```
 
 Isi:
 
-```jsx
-import Link
-  from "next/link";
+``` jsx
+import Link from "next/link";
 
-export default function PostCard({
-  post,
-}) {
+export default function PostCard({ post }) {
   return (
     <article>
-      <h2>
-        {post.title}
-      </h2>
+      <h2>{post.title}</h2>
 
-      <p>
-        {post.content}
-      </p>
+      <p>{post.content}</p>
 
-      <Link
-        href={
-          `/posts/${post.slug}`
-        }
-      >
+      <Link href={`/posts/${post.slug}`}>
         Read Post
       </Link>
 
       <style jsx>{`
         article {
-          background:
-            white;
-
-          padding:
-            24px;
-
-          margin-bottom:
-            16px;
-
-          border:
-            1px solid #ddd;
-
-          border-radius:
-            12px;
+          background: white;
+          padding: 24px;
+          margin-bottom: 16px;
+          border: 1px solid #ddd;
+          border-radius: 12px;
         }
 
         h2 {
-          margin-top:
-            0;
+          margin-top: 0;
         }
       `}</style>
     </article>
@@ -1369,29 +1159,20 @@ export default function PostCard({
 }
 ```
 
----
+Buat:
 
-# 26. Posts Page
-
-Create:
-
-```text
+``` text
 pages/posts/index.js
 ```
 
 Isi:
 
-```jsx
-import PostCard
-  from "../../components/PostCard";
-
-import {
-  getAllPosts,
-} from "../../lib/api";
+``` jsx
+import PostCard from "../../components/PostCard";
+import { getAllPosts } from "../../lib/api";
 
 export async function getStaticProps() {
-  const posts =
-    await getAllPosts();
+  const posts = await getAllPosts();
 
   return {
     props: {
@@ -1400,33 +1181,362 @@ export async function getStaticProps() {
   };
 }
 
-export default function PostsPage({
-  posts,
-}) {
+export default function PostsPage({ posts }) {
   return (
     <main>
       <h1>Posts</h1>
 
-      {posts.map(
-        (post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-          />
-        )
+      {posts.map((post) => (
+        <PostCard
+          key={post.id}
+          post={post}
+        />
+      ))}
+    </main>
+  );
+}
+```
+
+Buka:
+
+``` text
+http://localhost:3000/posts
+```
+
+## Alur getStaticProps
+
+``` text
+Browser membuka /posts
+        |
+        v
+getStaticProps()
+        |
+        v
+getAllPosts()
+        |
+        v
+lib/api.js
+        |
+        v
+fetch()
+        |
+        v
+GET /api/posts
+        |
+        v
+Node.js REST API
+        |
+        v
+Sequelize
+        |
+        v
+MySQL
+        |
+        v
+JSON Response
+        |
+        v
+props
+        |
+        v
+PostCard
+```
+
+Perhatikan bahwa Next.js tidak mengambil data langsung dari MySQL.
+Next.js meminta data melalui REST API Node.js.
+
+------------------------------------------------------------------------
+
+# 14. Dynamic Route --- \[slug\].js
+
+Buat:
+
+``` text
+pages/posts/[slug].js
+```
+
+Isi:
+
+``` jsx
+import {
+  getAllPosts,
+  getPostBySlug,
+} from "../../lib/api";
+
+export async function getStaticPaths() {
+  const posts = await getAllPosts();
+
+  const paths = posts.map((post) => ({
+    params: {
+      slug: post.slug,
+    },
+  }));
+
+  return {
+    paths,
+    fallback: false,
+  };
+}
+
+export async function getStaticProps({ params }) {
+  const post = await getPostBySlug(params.slug);
+
+  if (!post) {
+    return {
+      notFound: true,
+    };
+  }
+
+  return {
+    props: {
+      post,
+    },
+  };
+}
+
+export default function PostDetail({ post }) {
+  return (
+    <main>
+      <h1>{post.title}</h1>
+
+      <p>{post.content}</p>
+
+      {post.user && (
+        <p>Author: {post.user.name}</p>
       )}
     </main>
   );
 }
 ```
 
----
+## Bagaimana slug bekerja?
 
-# 27. Run Both Projects
+Misalnya API mengembalikan tiga slug:
 
-Terminal 1:
+``` text
+belajar-nextjs-routing
+dynamic-route-dengan-slug
+my-first-full-stack-post
+```
 
-```bash
+`getStaticPaths()` akan membentuk:
+
+``` js
+[
+  {
+    params: {
+      slug: "belajar-nextjs-routing"
+    }
+  },
+  {
+    params: {
+      slug: "dynamic-route-dengan-slug"
+    }
+  },
+  {
+    params: {
+      slug: "my-first-full-stack-post"
+    }
+  }
+]
+```
+
+Ketiga URL berikut dapat menggunakan satu file yang sama:
+
+``` text
+/posts/belajar-nextjs-routing
+/posts/dynamic-route-dengan-slug
+/posts/my-first-full-stack-post
+```
+
+Satu template, banyak halaman.
+
+## Flow detail post
+
+``` text
+User klik Read Post
+        |
+        v
+/posts/belajar-nextjs-routing
+        |
+        v
+pages/posts/[slug].js
+        |
+        v
+getStaticPaths()
+        |
+        v
+getStaticProps({ params })
+        |
+        v
+params.slug
+        |
+        v
+getPostBySlug(slug)
+        |
+        v
+GET /api/posts/:slug
+        |
+        v
+Node.js + MySQL
+        |
+        v
+JSON Response
+        |
+        v
+Post Detail Page
+```
+
+Test:
+
+``` text
+http://localhost:3000/posts/belajar-nextjs-routing
+http://localhost:3000/posts/dynamic-route-dengan-slug
+http://localhost:3000/posts/my-first-full-stack-post
+```
+
+Test slug tidak dikenal:
+
+``` text
+http://localhost:3000/posts/post-tidak-ada
+```
+
+Dengan `fallback: false`, slug yang tidak termasuk daftar paths akan
+menghasilkan 404.
+
+------------------------------------------------------------------------
+
+# 15. Global Layout and Navigation
+
+Buat:
+
+``` text
+components/Navbar.js
+```
+
+Isi:
+
+``` jsx
+import Link from "next/link";
+
+export default function Navbar() {
+  return (
+    <nav>
+      <Link href="/">Home</Link>
+      {" | "}
+      <Link href="/posts">Posts</Link>
+      {" | "}
+      <Link href="/profile">Profile</Link>
+      {" | "}
+      <Link href="/users">Users</Link>
+      {" | "}
+      <Link href="/login">Login</Link>
+    </nav>
+  );
+}
+```
+
+Buat:
+
+``` text
+components/Layout.js
+```
+
+Isi:
+
+``` jsx
+import Navbar from "./Navbar";
+
+export default function Layout({ children }) {
+  return (
+    <>
+      <Navbar />
+      {children}
+    </>
+  );
+}
+```
+
+Buka:
+
+``` text
+pages/_app.js
+```
+
+Isi:
+
+``` jsx
+import "../styles/globals.css";
+import Layout from "../components/Layout";
+
+export default function App({ Component, pageProps }) {
+  return (
+    <Layout>
+      <Component {...pageProps} />
+    </Layout>
+  );
+}
+```
+
+Buat:
+
+``` text
+styles/globals.css
+```
+
+Isi:
+
+``` css
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f7f7f7;
+  color: #111;
+}
+
+nav {
+  padding: 20px 40px;
+  background: #111;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  margin-right: 12px;
+}
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+input {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0 16px;
+}
+
+button {
+  padding: 10px 16px;
+  cursor: pointer;
+}
+```
+
+------------------------------------------------------------------------
+
+# 16. Run Both Projects
+
+Gunakan dua terminal yang berbeda.
+
+## Terminal 1 --- Backend
+
+``` bash
 cd harisenin-nodejs-rest-api-part-3
 
 git switch phase-5-nextjs-integration
@@ -1436,13 +1546,14 @@ npm run dev
 
 Expected:
 
-```text
-http://localhost:3001
+``` text
+Database connected
+Server running on http://localhost:3001
 ```
 
-Terminal 2:
+## Terminal 2 --- Frontend
 
-```bash
+``` bash
 cd harisenin-nextjs-part-1
 
 npm run dev
@@ -1450,720 +1561,352 @@ npm run dev
 
 Expected:
 
-```text
+``` text
 http://localhost:3000
 ```
 
----
-
-# 28. Test `/posts`
-
-Open:
-
-```text
-http://localhost:3000/posts
-```
-
-Flow:
-
-```text
-/posts
-   ↓
-getStaticProps()
-   ↓
-getAllPosts()
-   ↓
-fetch()
-   ↓
-localhost:3001/api/posts
-   ↓
-Node.js
-   ↓
-Sequelize
-   ↓
-MySQL
-   ↓
-JSON
-   ↓
-props
-   ↓
-PostCard
-```
-
-Checkpoint:
-
-```text
-[ ] /posts works
-
-[ ] data comes from Node.js
-
-[ ] data comes from MySQL
-
-[ ] Next.js has no hardcoded posts
-```
-
----
-
-# PART L — DYNAMIC ROUTE + getStaticPaths
-
-## 29. Create `[slug].js`
-
-Create:
-
-```text
-pages/posts/[slug].js
-```
-
-Isi:
-
-```jsx
-import {
-  getAllPosts,
-  getPostBySlug,
-} from "../../lib/api";
-
-export async function getStaticPaths() {
-  const posts =
-    await getAllPosts();
-
-  const paths =
-    posts.map(
-      (post) => ({
-        params: {
-          slug:
-            post.slug,
-        },
-      })
-    );
-
-  return {
-    paths,
-    fallback: false,
-  };
-}
-
-export async function getStaticProps({
-  params,
-}) {
-  const post =
-    await getPostBySlug(
-      params.slug
-    );
-
-  return {
-    props: {
-      post,
-    },
-  };
-}
+Jangan matikan backend saat menguji frontend.
 
-export default function PostDetail({
-  post,
-}) {
-  return (
-    <main>
-      <h1>
-        {post.title}
-      </h1>
+------------------------------------------------------------------------
 
-      <p>
-        {post.content}
-      </p>
+# 17. Test Full-Stack Application
 
-      {post.user && (
-        <p>
-          Author:
-          {" "}
-          {post.user.name}
-        </p>
-      )}
-    </main>
-  );
-}
-```
+  ---------------------------------------------------------------------------------
+  Fitur                   URL / Action                      Expected
+  ----------------------- --------------------------------- -----------------------
+  Home                    `/`                               Homepage tampil
 
----
-
-# 30. Test Dynamic Post
-
-Open:
-
-```text
-http://localhost:3000/posts/belajar-nextjs-routing
-```
-
-Expected flow:
-
-```text
-URL
-   ↓
-[slug].js
-   ↓
-params.slug
-   ↓
-getPostBySlug()
-   ↓
-GET /api/posts/:slug
-   ↓
-Node.js
-   ↓
-MySQL
-   ↓
-JSON
-   ↓
-Post Detail
-```
+  Register                `/register`                       User berhasil dibuat
 
----
+  Login                   `/login`                          JWT diterima dan
+                                                            disimpan
 
-# 31. Test Second Post
+  Profile                 `/profile`                        Profil user tampil
+                                                            dengan token
 
-Open:
+  Users                   `/users`                          Daftar user tampil
+                                                            dengan token
 
-```text
-http://localhost:3000/posts/dynamic-route-dengan-slug
-```
+  Posts                   `/posts`                          Artikel dari database
+                                                            tampil
 
-Dua URL:
+  Post detail             `/posts/belajar-nextjs-routing`   Detail artikel tampil
 
-```text
-/posts/belajar-nextjs-routing
+  Unknown slug            `/posts/post-tidak-ada`           404
+  ---------------------------------------------------------------------------------
 
-/posts/dynamic-route-dengan-slug
-```
+## Test Authentication
 
-menggunakan satu file:
+1.  Register user baru.
+2.  Login menggunakan email dan password tersebut.
+3.  Periksa bahwa response login memiliki `data.token`.
+4.  Token disimpan di `sessionStorage`.
+5.  Buka `/profile`.
+6.  Next.js mengirim token melalui `Authorization: Bearer`.
+7.  Backend memverifikasi token menggunakan JWT middleware.
+8.  Jika token tidak valid atau kedaluwarsa, user diminta login kembali.
 
-```text
-pages/posts/[slug].js
-```
+## Test Posts
 
----
+1.  Pastikan seeder sudah dijalankan.
+2.  Buka `/posts`.
+3.  Pastikan tiga artikel tampil.
+4.  Klik `Read Post`.
+5.  Pastikan URL menggunakan slug.
+6.  Pastikan detail artikel sesuai dengan slug yang dipilih.
 
-# 32. Test Unknown Slug
+------------------------------------------------------------------------
 
-Open:
+# 18. Important: Static Generation and New Posts
 
-```text
-http://localhost:3000/posts/post-tidak-ada
-```
+Pada Pages Router, `getStaticProps()` dan `getStaticPaths()` digunakan
+untuk membuat halaman statis.
 
-Expected:
+Dalam production, data diambil ketika `npm run build` dijalankan.
 
-```text
-404
-```
+Artinya:
 
-karena:
+1.  Seeder menambahkan data ke MySQL.
+2.  Node.js menyediakan data melalui `/api/posts`.
+3.  Next.js membaca daftar slug melalui `getStaticPaths()`.
+4.  Next.js membangun halaman detail untuk setiap slug.
+5.  Jika ada artikel baru setelah production build, jalankan ulang build
+    dan deploy agar halaman statis baru ikut dibuat.
 
-```js
-fallback: false
-```
+Untuk latihan development, Next.js menjalankan ulang proses
+data-fetching saat halaman diminta. Namun, jangan menganggap perubahan
+database otomatis memperbarui production static pages.
 
----
+------------------------------------------------------------------------
 
-# PART M — STUDENT CHALLENGE
+# 19. Build and Run Production
 
-## 33. Add New Post from Database
+Pastikan backend tetap hidup di port 3001.
 
-Jangan tambah data hardcoded di Next.js.
+Pada terminal frontend:
 
-DBeaver:
-
-```sql
-INSERT INTO posts
-(
-  user_id,
-  title,
-  slug,
-  content,
-  created_at,
-  updated_at
-)
-VALUES
-(
-  1,
-  'My First Full Stack Post',
-  'my-first-full-stack-post',
-  'Node.js is my backend and Next.js is my frontend.',
-  NOW(),
-  NOW()
-);
-```
-
-Check backend:
-
-```text
-GET
-http://localhost:3001/api/posts
-```
-
-Pastikan post baru muncul.
-
----
-
-# 34. Test from Next.js
-
-Development mode:
-
-```text
-http://localhost:3000/posts
-```
-
-Then:
-
-```text
-http://localhost:3000/posts/my-first-full-stack-post
-```
-
-Checklist:
-
-```text
-[ ] data added to MySQL
-
-[ ] Node.js returns new data
-
-[ ] Next.js displays new data
-
-[ ] dynamic URL works
-
-[ ] detail page works
-
-[ ] no hardcoded post in Next.js
-```
-
----
-
-# PART N — BUILD TEST
-
-## 35. Keep Backend Running
-
-Backend:
-
-```bash
-npm run dev
-```
-
-Expected:
-
-```text
-http://localhost:3001
-```
-
----
-
-# 36. Build Next.js
-
-Frontend:
-
-```bash
+``` bash
 npm run build
 ```
 
-Backend harus hidup karena:
+Expected: build berhasil.
 
-```text
-getStaticProps
-getStaticPaths
-```
+Kemudian:
 
-membutuhkan API saat static pages dibuat.
-
-Expected:
-
-```text
-Build completed successfully
-```
-
----
-
-# 37. Run Production Build
-
-```bash
+``` bash
 npm run start
 ```
 
 Test:
 
-```text
+``` text
 http://localhost:3000
-
-http://localhost:3000/about
-
+http://localhost:3000/login
+http://localhost:3000/register
+http://localhost:3000/profile
+http://localhost:3000/users
 http://localhost:3000/posts
-
 http://localhost:3000/posts/belajar-nextjs-routing
 ```
 
----
+------------------------------------------------------------------------
 
-# PART O — GIT
+# 20. Troubleshooting
 
-## 38. Commit Backend Phase 5
+## A. fetch failed
 
-Backend:
-
-```bash
-cd harisenin-nodejs-rest-api-part-3
-```
-
-```bash
-git status
-```
-
-```bash
-git add .
-```
-
-```bash
-git commit -m "phase 5: nextjs integration posts api"
-```
-
-```bash
-git push -u origin phase-5-nextjs-integration
-```
-
----
-
-# 39. Push Next.js Repository
-
-Frontend:
-
-```bash
-cd harisenin-nextjs-part-1
-```
+Penyebab: - Backend belum berjalan. - Port backend salah. - `API_URL`
+salah.
 
 Check:
 
-```bash
-git status
-```
-
-Commit:
-
-```bash
-git add .
-```
-
-```bash
-git commit -m "nextjs part 1: connect nodejs api"
-```
-
-Create empty GitHub repository:
-
-```text
-harisenin-nextjs-part-1
-```
-
-Add remote:
-
-```bash
-git remote add origin https://github.com/USERNAME/harisenin-nextjs-part-1.git
-```
-
-Push:
-
-```bash
-git push -u origin main
-```
-
----
-
-# DEBUGGING FLOW
-
-Kalau error:
-
-```text
-DO NOT DEBUG EVERYTHING AT ONCE
-```
-
-Check:
-
-```text
-1. Laragon running?
-
-2. MySQL running?
-
-3. Node.js running on 3001?
-
-4. GET /api/posts works?
-
-5. GET /api/posts/:slug works?
-
-6. Next.js running on 3000?
-
-7. API_URL correct?
-
-8. getStaticProps receives posts?
-
-9. getStaticPaths receives slug?
-
-10. [slug].js uses params.slug?
-```
-
-Flow:
-
-```text
-BROWSER
-   ↓
-NEXT.JS ROUTE
-   ↓
-getStaticProps / getStaticPaths
-   ↓
-lib/api.js
-   ↓
-FETCH
-   ↓
-NODE.JS ROUTE
-   ↓
-CONTROLLER
-   ↓
-SEQUELIZE
-   ↓
-MYSQL
-```
-
----
-
-# COMMON ISSUE — `fetch failed`
-
-Error:
-
-```text
-TypeError: fetch failed
-```
-
-Test backend:
-
-```text
-http://localhost:3001
-```
-
-Then:
-
-```text
+``` text
+http://localhost:3001/
 http://localhost:3001/api/posts
 ```
 
-Kalau backend mati:
+Pastikan `.env.local`:
 
-```bash
-npm run dev
+``` env
+API_URL=http://localhost:3001
+NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
----
+Restart Next.js setelah mengubah environment.
 
-# COMMON ISSUE — PORT ALREADY IN USE
+## B. CORS Error
 
-Pastikan:
+Jika request dari browser ditolak oleh CORS, pastikan backend
+mengaktifkan CORS dan mengizinkan origin frontend:
 
-```text
-Node.js
-3001
-
-Next.js
-3000
+``` text
+http://localhost:3000
 ```
 
-Backend `.env`:
+Backend saat ini menggunakan `app.use(cors())`, yang mengizinkan semua
+origin secara default. Untuk production, batasi origin sesuai domain
+frontend.
 
-```env
-SERVER_PORT=3001
-```
+## C. posts.map is not a function
 
----
+Periksa response API.
 
-# COMMON ISSUE — `posts.map is not a function`
+Response:
 
-Backend response:
-
-```json
+``` json
 {
   "message": "Success",
   "data": []
 }
 ```
 
-Maka helper harus:
+Helper harus mengembalikan:
 
-```js
+``` js
 return result.data;
 ```
 
 Bukan:
 
-```js
+``` js
 return result;
 ```
 
----
-
-# COMMON ISSUE — DYNAMIC PAGE 404
+## D. Detail post 404
 
 Check:
 
-```sql
-SELECT
-  id,
-  title,
-  slug
-FROM posts;
+``` text
+GET http://localhost:3001/api/posts
 ```
 
-Pastikan slug ada.
+Pastikan setiap post memiliki slug.
 
-Rule:
+Contoh:
 
-```text
+``` text
+belajar-nextjs-routing
+```
+
+Pastikan nama file:
+
+``` text
 pages/posts/[slug].js
-        ↓
-params.slug
 ```
 
----
+dan parameter:
 
-# COMMON ISSUE — BUILD FAILS
+``` js
+params: {
+  slug: post.slug
+}
+```
 
-Kalau:
+## E. Login berhasil tetapi Profile 401
 
-```bash
+Periksa: - Apakah login mengembalikan `data.token`? - Apakah token
+disimpan di `sessionStorage`? - Apakah request profile mengirim
+`Authorization: Bearer TOKEN`? - Apakah JWT belum kedaluwarsa? - Apakah
+`JWT_SECRET` backend tetap sama?
+
+Jangan menaruh `JWT_SECRET` di frontend.
+
+## F. Slug baru tidak muncul setelah production build
+
+Jalankan kembali:
+
+``` bash
 npm run build
 ```
 
-gagal fetch API, pastikan backend masih hidup:
+Pastikan backend hidup dan data baru sudah muncul pada `GET /api/posts`.
 
-```text
-http://localhost:3001
+------------------------------------------------------------------------
+
+# 21. Final Checklist
+
+## Backend Readiness
+
+``` text
+[ ] Node.js berjalan pada port 3001
+[ ] MySQL berjalan
+[ ] Database fsd_bootcamp tersedia
+[ ] Endpoint POST /api/auth/register tersedia
+[ ] Endpoint POST /api/auth/login tersedia
+[ ] Endpoint GET /api/profile tersedia
+[ ] Endpoint GET /api/users tersedia
+[ ] Endpoint GET /api/posts tersedia
+[ ] Endpoint GET /api/posts/:slug tersedia
+[ ] Seeder sample posts sudah dijalankan
+[ ] Setiap post memiliki slug unik
 ```
 
----
+## Next.js Frontend
 
-# FINAL CHECKLIST
-
-```text
-NODE.JS
-
-[ ] phase-5-nextjs-integration exists
-
-[ ] backend runs on 3001
-
-[ ] posts has slug column
-
-[ ] GET /api/posts works
-
-[ ] GET /api/posts/:slug works
-
-
-NEXT.JS
-
-[ ] frontend runs on 3000
-
-[ ] Pages Router is used
-
-[ ] / works
-
-[ ] /about works
-
-[ ] /posts works
-
-[ ] Navbar works
-
-[ ] getStaticProps fetches Node.js API
-
-[ ] getStaticPaths uses API slugs
-
-[ ] /posts/[slug] works
-
-[ ] unknown slug returns 404
-
-[ ] Styled JSX works
-
-[ ] npm run build succeeds
-
-
-FULL STACK
-
-[ ] MySQL stores data
-
-[ ] Sequelize reads data
-
-[ ] Node.js returns JSON
-
-[ ] Next.js consumes JSON
-
-[ ] React renders UI
-
-[ ] Browser displays final result
+``` text
+[ ] Next.js project berhasil dibuat
+[ ] Pages Router digunakan
+[ ] .env.local sudah dibuat
+[ ] API_URL mengarah ke localhost:3001
+[ ] NEXT_PUBLIC_API_URL mengarah ke localhost:3001
+[ ] Home page tampil
+[ ] Register berhasil
+[ ] Login berhasil
+[ ] JWT tersimpan
+[ ] Profile dapat mengambil data
+[ ] Users dapat mengambil data
+[ ] Posts dapat mengambil data dari API
+[ ] getStaticProps berjalan
+[ ] getStaticPaths mengambil slug dari API
+[ ] Dynamic route berhasil
+[ ] Unknown slug menghasilkan 404
+[ ] npm run build berhasil
 ```
 
----
+## Full-Stack Result
 
-# FINAL FLOW
+``` text
+[ ] MySQL menyimpan data
+[ ] Sequelize membaca data
+[ ] Node.js menyediakan JSON
+[ ] Next.js mengonsumsi API
+[ ] JWT melindungi endpoint yang membutuhkan login
+[ ] React menampilkan data ke browser
+```
 
-```text
+------------------------------------------------------------------------
+
+# 22. Final Learning Flow
+
+``` text
+SEEDER
+   |
+   v
 MYSQL
-   ↓
+   |
+   v
 SEQUELIZE
-   ↓
-NODE.JS
-   ↓
-EXPRESS API
-   ↓
-JSON
-   ↓
+   |
+   v
+NODE.JS REST API
+   |
+   v
+JSON RESPONSE
+   |
+   v
 NEXT.JS
-   ↓
-getStaticProps / getStaticPaths
-   ↓
-PROPS
-   ↓
-REACT
-   ↓
+   |
+   +---- Register / Login
+   |
+   +---- JWT / Protected API
+   |
+   +---- getStaticProps
+   |
+   +---- getStaticPaths
+   |
+   +---- Dynamic Routes
+   |
+   v
+REACT COMPONENTS
+   |
+   v
 BROWSER
 ```
 
----
+## Key Mental Model
 
-# KEY MENTAL MODEL
+  Technology           Responsibility
+  -------------------- ------------------------------------------------
+  Sequelize Seeder     Mengisi data awal ke database
+  MySQL                Menyimpan data
+  Sequelize            Menghubungkan backend dengan database
+  Node.js + Express    Menyediakan REST API
+  JWT                  Membawa identitas user untuk protected request
+  Next.js              Membangun frontend dan routing
+  `fetch()`            Mengambil data dari backend
+  `getStaticProps()`   Menyiapkan data untuk halaman
+  `getStaticPaths()`   Menentukan dynamic paths
+  `[slug].js`          Satu template untuk banyak halaman detail
 
-```text
-Node.js
-= Backend
+**Target akhir:** mahasiswa mampu membangun frontend Next.js dari nol,
+menggunakan endpoint backend yang sudah tersedia, menampilkan data MySQL
+melalui REST API, melakukan authentication menggunakan JWT, dan membuat
+halaman artikel dinamis berdasarkan slug.
 
-Express
-= API
+------------------------------------------------------------------------
 
-Sequelize
-= Bridge to Database
+# Reference Documentation
 
-MySQL
-= Data
-
-Next.js
-= Frontend
-
-getStaticProps
-= Get data for page
-
-getStaticPaths
-= Decide which dynamic URLs exist
-
-[slug].js
-= One template, many URLs
-```
-
----
-
-# NEXT — NEXT.JS PART 2
-
-```text
-Landing Page
-   ↓
-GitHub
-   ↓
-Deploy
-   ↓
-Live URL
-   ↓
-Share to LinkedIn
-```
+-   Pages Router: https://nextjs.org/docs/pages
+-   Pages and Layouts:
+    https://nextjs.org/docs/pages/building-your-application/routing/pages-and-layouts
+-   Linking and Navigating:
+    https://nextjs.org/docs/pages/building-your-application/routing/linking-and-navigating
+-   Dynamic Routes:
+    https://nextjs.org/docs/pages/building-your-application/routing/dynamic-routes
+-   getStaticProps:
+    https://nextjs.org/docs/pages/building-your-application/data-fetching/get-static-props
+-   getStaticPaths:
+    https://nextjs.org/docs/pages/building-your-application/data-fetching/get-static-paths
+-   CSS-in-JS / Styled JSX:
+    https://nextjs.org/docs/pages/guides/css-in-js
