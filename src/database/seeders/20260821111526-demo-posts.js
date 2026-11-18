@@ -59,6 +59,23 @@ module.exports = {
   // created_at: new Date(),
   // updated_at: new Date(),
         },
+        
+        {
+          user_id: 1,
+
+          title:
+            "Combine NEXT JS with BE ",
+
+          slug:
+            "combine-next-js-with-be",
+
+          content:
+            "Node.js is my backend and Next.js is my frontend.",
+
+
+  // created_at: new Date(),
+  // updated_at: new Date(),
+        },
       ]
     );
   },
